@@ -12,21 +12,20 @@ return
 ; --- FUNCTIONS ---
 
 LoadSettings() {
-    IniRead, current_num, settings.ini, Sequence, LastNumber, 0
+    global current_num, prefix, suffix
+    IniRead, current_num, settings.ini, Sequence, LastNumber, 00000
     IniRead, prefix, settings.ini, Settings, Prefix, AAPI
     IniRead, suffix, settings.ini, Settings, Suffix, S
-    IniRead, last_generated, settings.ini, Sequence, LastGenerated, None
 }
 
-GenerateInvoice(p := "", n := "", s := "") {
+GenerateInvoice(p := "", n := 0, s := "") {
+    global prefix, current_num, suffix
     target_prefix := (p == "") ? prefix : p
-    target_num    := (n == "") ? current_num : n
+    target_num := (n == 0) ? current_num : n
     target_suffix := (s == "") ? suffix : s
     
-    numeric_val := target_num + 0
-    
-    ; Tinanggal na ang string formatting/padding para sa digit length
-    return target_prefix . numeric_val . target_suffix
+    formatted_num := Format("{:07}", target_num)
+    return target_prefix . formatted_num . target_suffix
 }
 
 ; --- HOTKEYS ---
@@ -66,7 +65,7 @@ return
     ; --- CUSTOM TITLE BAR ---
     ; Text Color: #4A5568 (Deep Slate/Charcoal)
     Gui, Font, b s10 c4A5568, Segoe UI
-    Gui, Add, Text, x15 y12 w200 h20 +BackgroundTrans vTitleText, INVOICE MANAGER PRO
+    Gui, Add, Text, x15 y12 w200 h20 +BackgroundTrans vTitleText, INVOICE SERIES MANAGER 
     
     ; Custom Modern Close Button (X) sa sulok (#E53E3E - Soft Red)
     Gui, Font, b s12 cE53E3E
@@ -106,17 +105,17 @@ return
     Gui, Add, Button, x20 y265 w135 h35 gSaveSettings +Default, SAVE CHANGES
     Gui, Add, Button, x175 y265 w135 h35 gGuiClose, CANCEL
     
-    ; Status Label Text sa Ibaba (#718096 - Muted Gray)
+    ; Status Label Text  (#718096 - Muted Gray)
     Gui, Font, s8 c718096
     Gui, Add, Text, x20 y315 w290 h15 +BackgroundTrans, Last Active String: %last_generated%
     
-    ; Intercept click para sa borderless window drag
+    ; Intercept click for borderless window drag
     OnMessage(0x0201, "WM_LBUTTONDOWN")
     
     ; Smooth Fade-In
     DllCall("AnimateWindow", "UInt", GuiHwnd, "Int", 150, "UInt", 0xa0000)
     
-    ; Binabaan ang taas ng window (w330 h345) dahil nabawasan ng isang field
+    
     Gui, Show, w330 h345, InvoicePro
 return
 
