@@ -3,26 +3,32 @@
 SendMode Input
 SetWorkingDir %A_ScriptDir%
 
-LoadSettings()
+global current_num, prefix, suffix, pad_length, last_generated := "None"
+global GuiHwnd
 
+LoadSettings()
 return 
 
 ; --- FUNCTIONS ---
 
 LoadSettings() {
-    global current_num, prefix, suffix
     IniRead, current_num, settings.ini, Sequence, LastNumber, 00000
     IniRead, prefix, settings.ini, Settings, Prefix, AAPI
     IniRead, suffix, settings.ini, Settings, Suffix, S
+    IniRead, pad_length, settings.ini, Settings, PadLength, 7
+    IniRead, last_generated, settings.ini, Sequence, LastGenerated, None
 }
 
-GenerateInvoice(p := "", n := 0, s := "") {
-    global prefix, current_num, suffix
+GenerateInvoice(p := "", n := "", s := "", len := "") {
     target_prefix := (p == "") ? prefix : p
-    target_num := (n == 0) ? current_num : n
+    target_num    := (n == "") ? current_num : n
     target_suffix := (s == "") ? suffix : s
+    target_len    := (len == "") ? pad_length : len
     
-    formatted_num := Format("{:07}", target_num)
+    numeric_val := target_num + 0
+    format_string := "{:0" . target_len . "}"
+    formatted_num := Format(format_string, numeric_val)
+    
     return target_prefix . formatted_num . target_suffix
 }
 
@@ -31,79 +37,142 @@ GenerateInvoice(p := "", n := 0, s := "") {
 !F9::
     Critical 
     invoice_string := GenerateInvoice()
+    SendInput, %invoice_string%
     
-    ; IBINALIK SA SEND METHOD (Hindi na gagamit ng clipboard)
-    Send, %invoice_string%
-    
-    ; AUDIO FEEDBACK & TOOLTIP
     SoundBeep, 750, 50 
     ToolTip, Sent: %invoice_string%
     SetTimer, RemoveToolTip, -2000
     
+    last_generated := invoice_string
     current_num += 1
     IniWrite, %current_num%, settings.ini, Sequence, LastNumber
+    IniWrite, %last_generated%, settings.ini, Sequence, LastGenerated
 return
 
 RemoveToolTip:
     ToolTip
 return
 
+; --- BORDERLESS PREMIUM GUI (Alt + F10) ---
+
 !F10::
     LoadSettings() 
     Gui, Destroy 
     
-    Gui, Font, s10, Segoe UI
-    Gui, Add, GroupBox, x10 y10 w260 h150, Invoice Settings
+    ; -Caption tatanggalin ang standard title bar para maging flat modern app look
+    ; +ToolWindow para walang hiwalay na icon sa taskbar kung gustong malinis
+    Gui, +LastFound -Caption +AlwaysOnTop +HwndGuiHwnd
     
-    ; LIVE UPDATE PREVIEW
-    Gui, Add, Text, x25 y35 w100 h20, Prefix:
-    Gui, Add, Edit, x120 y32 w130 h25 vGuiPrefix gUpdatePreview, %prefix%
+    ; Dark Theme Palette (Fluent/Material Slate Dark)
+    Gui, Color, 1F2026, 2D303E 
     
-    Gui, Add, Text, x25 y70 w100 h20, Next Number:
-    Gui, Add, Edit, x120 y67 w130 h25 vGuiNum Number gUpdatePreview, %current_num%
+    ; --- CUSTOM TITLE BAR ---
+    ; Gumagamit ng OnMessage sa ibaba para pwedeng i-drag ang buong window gamit ito
+    Gui, Font, b s10 cA0A5B5, Segoe UI
+    Gui, Add, Text, x15 y12 w200 h20 +BackgroundTrans vTitleText, INVOICE MANAGER PRO
     
-    Gui, Add, Text, x25 y105 w100 h20, Suffix:
-    Gui, Add, Edit, x120 y102 w130 h25 vGuiSuffix gUpdatePreview, %suffix%
+    ; Custom Modern Close Button (X) sa sulok
+    Gui, Font, b s12 cFF6B6B
+    Gui, Add, Text, x300 y10 w25 h20 Center gGuiClose +BackgroundTrans +gGuiClose, ×
     
-    ; Preview Box
-    Gui, Font, b s10, Segoe UI
-    current_preview := GenerateInvoice()
-    Gui, Add, Text, x10 y175 w260 h20 Center vGuiPreview +BackgroundTrans +Theme, Preview: %current_preview%
+    ; Decorative Top Divider Line (Accent Line)
+    Gui, Add, Progress, x0 y38 w330 h2 Background3B5BDB c3B5BDB, 100
     
-    ; Buttons
-    Gui, Font, Norm s10, Segoe UI
-    Gui, Add, Button, x30 y205 w100 h30 gSaveSettings Default, Save
-    Gui, Add, Button, x150 y205 w100 h30 gGuiClose, Cancel
+    ; --- MAIN CONTROLS ---
+    Gui, Font, Norm s10 cC1C2C5, Segoe UI
     
-    Gui, Show, w280 h250, Invoice Config v2.0
+    ; Prefix Field
+    Gui, Add, Text, x20 y60 w90 h25 +0x200, Prefix
+    Gui, Add, Edit, x120 y58 w185 h26 cWhite vGuiPrefix gUpdatePreview +Background25262B, %prefix%
+    
+    ; Next Number Field
+    Gui, Add, Text, x20 y100 w90 h25 +0x200, Next Number
+    Gui, Add, Edit, x120 y98 w185 h26 cWhite vGuiNum Number gUpdatePreview +Background25262B, %current_num%
+    
+    ; Suffix Field
+    Gui, Add, Text, x20 y140 w90 h25 +0x200, Suffix
+    Gui, Add, Edit, x120 y138 w185 h26 cWhite vGuiSuffix gUpdatePreview +Background25262B, %suffix%
+    
+    ; Padding Dropdown
+    Gui, Add, Text, x20 y180 w90 h25 +0x200, Digit Length
+    Gui, Add, DropDownList, x120 y178 w185 vGuiLength gUpdatePreview Choose%pad_length%  +Background25262B, 4|5|6|7|8|9|10
+    
+    ; --- FLAT LIVE PREVIEW BOX ---
+    Gui, Color, , 25262B
+    Gui, Font, b s9 c3B5BDB
+    Gui, Add, Text, x20 y225 w290 h18 +BackgroundTrans, PREVIEW (Click text to copy instantly)
+    
+    current_preview := GenerateInvoice(prefix, current_num, suffix, pad_length)
+    Gui, Font, b s14 cFFD43B
+    ; Gagamit ng 'gCopyOnPreview' click command
+    Gui, Add, Text, x20 y245 w290 h35 Center vGuiPreview gCopyOnPreview +0x200 +Background25262B, %current_preview%
+    
+    ; --- APP FOOTER ACTION BUTTONS ---
+    Gui, Font, Norm s10 cWhite
+    ; Stylized System buttons gamit ang positional layout
+    Gui, Add, Button, x20 y305 w135 h35 gSaveSettings +Default, SAVE CHANGES
+    Gui, Add, Button, x175 y305 w135 h35 gGuiClose, CANCEL
+    
+    ; Status Label Text sa Ibaba
+    Gui, Font, s8 c5C5F66
+    Gui, Add, Text, x20 y350 w290 h15 +BackgroundTrans, Last Active String: %last_generated%
+    
+    ; Intercept click sa kahit anong part ng window para gumana ang pag-drag natin (Borderless Control)
+    OnMessage(0x0201, "WM_LBUTTONDOWN")
+    
+    ; Smooth Fade-In
+    DllCall("AnimateWindow", "UInt", GuiHwnd, "Int", 150, "UInt", 0xa0000)
+    
+    Gui, Show, w330 h380, InvoicePro
 return
 
-; --- GUI ACTIONS ---
+; --- SYSTEM INTERACTS & ACTIONS ---
+
+; Magic function para pwedeng ma-drag ang window kahit walang title bar
+WM_LBUTTONDOWN() {
+    PostMessage, 0xA1, 2,,, A
+}
 
 UpdatePreview:
     Gui, Submit, NoHide 
-    temp_preview := GenerateInvoice(GuiPrefix, GuiNum, GuiSuffix)
-    GuiControl,, GuiPreview, Preview: %temp_preview%
+    if (GuiNum == "") {
+        GuiControl, +cFF6B6B, GuiPreview
+        GuiControl,, GuiPreview, [ INPUT NUMBER ]
+        return
+    }
+    GuiControl, +cFFD43B, GuiPreview
+    temp_preview := GenerateInvoice(GuiPrefix, GuiNum, GuiSuffix, GuiLength)
+    GuiControl,, GuiPreview, %temp_preview%
+return
+
+CopyOnPreview:
+    Gui, Submit, NoHide
+    if (GuiNum != "") {
+        copied_text := GenerateInvoice(GuiPrefix, GuiNum, GuiSuffix, GuiLength)
+        Clipboard := copied_text
+        ToolTip, Copied to Clipboard: %copied_text%
+        SetTimer, RemoveToolTip, -1200
+    }
 return
 
 SaveSettings:
     Gui, Submit
-    
     if (GuiNum == "") {
-        MsgBox, 48, Error, 'Next Number' cannot be empty!, 2
+        MsgBox, 48, Application Error, Please input a valid starting number sequence.
         return
     }
     
     GuiNum := GuiNum + 0 
-    
     IniWrite, %GuiPrefix%, settings.ini, Settings, Prefix
     IniWrite, %GuiNum%, settings.ini, Sequence, LastNumber
     IniWrite, %GuiSuffix%, settings.ini, Settings, Suffix
+    IniWrite, %GuiLength%, settings.ini, Settings, PadLength
     
     LoadSettings()
-    MsgBox, 64, Success, Settings updated successfully!, 1.2
+    Gui, Destroy
 return
 
 GuiClose:
+    DllCall("AnimateWindow", "UInt", GuiHwnd, "Int", 100, "UInt", 0x90000)
     Gui, Destroy
 return
