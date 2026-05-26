@@ -3,12 +3,11 @@
 SendMode Input
 SetWorkingDir %A_ScriptDir%
 
-; I-load ang mga settings mula sa INI File
 LoadSettings()
 
-return ; End of Auto-Execute Section
+return 
 
-; --- MGA FUNCTIONS ---
+; --- FUNCTIONS ---
 
 LoadSettings() {
     global current_num, prefix, suffix
@@ -18,43 +17,38 @@ LoadSettings() {
 }
 
 GenerateInvoice(p := "", n := 0, s := "") {
-    ; Kung walang ipinasang parameters, gamitin ang global variables
+    
     global prefix, current_num, suffix
     target_prefix := (p == "") ? prefix : p
     target_num := (n == 0) ? current_num : n
     target_suffix := (s == "") ? suffix : s
     
-    ; Sinisiguro nitong laging may 7-digit padding kahit ano i-type ng user
     formatted_num := Format("{:07}", target_num)
     return target_prefix . formatted_num . target_suffix
 }
 
-; --- MGA HOTKEYS ---
+; --- HOTKEYS ---
 
-; [Alt + F9] - Safe Keystroke Injection sa Clipboard
 !F9::
-    Critical ; Pinipigilan ma-interrupt ng ibang thread ang proseso
+    Critical 
     invoice_string := GenerateInvoice()
     
-    ; Clipboard Backup & Paste method
     ClipboardOld := ClipboardAll
     Clipboard := invoice_string
     ClipWait, 1
     
     Send ^v
-    Sleep, 100 ; Medyo tinaasan para sa mas mabagal na system inputs
+    Sleep, 100 
     Clipboard := ClipboardOld
     
-    ; Mabilis na audio feedback sa halip na umaasa lang sa TrayTip
+    ; AUDIO FEEDBACK
     SoundBeep, 750, 50 
     TrayTip, Auto-Invoice, Sent: %invoice_string%, 1, 0x10
     
-    ; Dagdag sa counter at i-save agad
     current_num += 1
     IniWrite, %current_num%, settings.ini, Sequence, LastNumber
 return
 
-; [Alt + F10] - Mas Modernong GUI Control Panel na may Live Preview
 !F10::
     LoadSettings() 
     Gui, Destroy 
@@ -62,7 +56,7 @@ return
     Gui, Font, s10, Segoe UI
     Gui, Add, GroupBox, x10 y10 w260 h150, Invoice Settings
     
-    ; Idinagdag ang 'gUpdatePreview' para magbago ang text habang nagrerepaso
+    ; LIVE UPDATE PREVIEW
     Gui, Add, Text, x25 y35 w100 h20, Prefix:
     Gui, Add, Edit, x120 y32 w130 h25 vGuiPrefix gUpdatePreview, %prefix%
     
@@ -87,7 +81,6 @@ return
 
 ; --- GUI ACTIONS ---
 
-; Awtomatikong tinatawag tuwing may binabago sa mga Edit fields
 UpdatePreview:
     Gui, Submit, NoHide ; Kunin ang data nang hindi sinasara ang GUI
     ; Gumawa ng temporary preview base sa kasalukuyang tina-type
@@ -104,7 +97,6 @@ SaveSettings:
         return
     }
     
-    ; Siguraduhin ding naka-format na agad bilang bilang (integer)
     GuiNum := GuiNum + 0 
     
     IniWrite, %GuiPrefix%, settings.ini, Settings, Prefix
