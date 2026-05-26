@@ -32,27 +32,20 @@ GenerateInvoice(p := "", n := 0, s := "") {
     Critical 
     invoice_string := GenerateInvoice()
     
-    ClipboardOld := ClipboardAll ; I-save ang lumang clipboard
-    Clipboard := ""              ; Linisin muna ang clipboard para gumana ang ClipWait
-    Clipboard := invoice_string
-    ClipWait, 1, 1               ; Siguraduhing pumasok na ang data sa clipboard
+    ; IBINALIK SA SEND METHOD (Hindi na gagamit ng clipboard)
+    Send, %invoice_string%
     
-    if (!ErrorLevel) {
-        Send ^v
-        Sleep, 300               ; Tinaasan mula 100 patungong 300 para hindi magkasabay ang paste at pag-restore
-    } else {
-        ; Fallback kung sakaling nag-timeout ang clipboard, ita-type na lang paisa-isa
-        SendInput %invoice_string%
-    }
-    
-    Clipboard := ClipboardOld    ; Ibalik ang lumang clipboard
-    
-    ; AUDIO FEEDBACK
+    ; AUDIO FEEDBACK & TOOLTIP
     SoundBeep, 750, 50 
-    TrayTip, Auto-Invoice, Sent: %invoice_string%, 1, 0x10
+    ToolTip, Sent: %invoice_string%
+    SetTimer, RemoveToolTip, -2000
     
     current_num += 1
     IniWrite, %current_num%, settings.ini, Sequence, LastNumber
+return
+
+RemoveToolTip:
+    ToolTip
 return
 
 !F10::
