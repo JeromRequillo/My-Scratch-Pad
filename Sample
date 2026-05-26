@@ -10,20 +10,22 @@ return
 ; --- FUNCTIONS ---
 
 LoadSettings() {
-    global current_num, prefix, suffix
+    global current_num, prefix, suffix, digits
     IniRead, current_num, settings.ini, Sequence, LastNumber, 00000
     IniRead, prefix, settings.ini, Settings, Prefix, AAPI
     IniRead, suffix, settings.ini, Settings, Suffix, S
+    IniRead, digits, settings.ini, Settings, Digits, 7 ; Default ay 7 kung walang mahanap
 }
 
-GenerateInvoice(p := "", n := 0, s := "") {
-    
-    global prefix, current_num, suffix
+GenerateInvoice(p := "", n := -1, s := "", d := 0) {
+    global prefix, current_num, suffix, digits
     target_prefix := (p == "") ? prefix : p
-    target_num := (n == 0) ? current_num : n
+    target_num    := (n == -1) ? current_num : n
     target_suffix := (s == "") ? suffix : s
+    target_digits := (d == 0) ? digits : d
     
-    formatted_num := Format("{:07}", target_num)
+    ; Dynamic format gamit ang target_digits variable
+    formatted_num := Format("{:0" . target_digits . "}", target_num)
     return target_prefix . formatted_num . target_suffix
 }
 
@@ -54,7 +56,8 @@ return
     Gui, Destroy 
     
     Gui, Font, s10, Segoe UI
-    Gui, Add, GroupBox, x10 y10 w260 h150, Invoice Settings
+    ; Nilakihan nang kaunti ang taas ng GroupBox para magkasya ang bagong dropdown
+    Gui, Add, GroupBox, x10 y10 w260 h185, Invoice Settings
     
     ; LIVE UPDATE PREVIEW
     Gui, Add, Text, x25 y35 w100 h20, Prefix:
@@ -63,35 +66,65 @@ return
     Gui, Add, Text, x25 y70 w100 h20, Next Number:
     Gui, Add, Edit, x120 y67 w130 h25 vGuiNum Number gUpdatePreview, %current_num%
     
-    Gui, Add, Text, x25 y105 w100 h20, Suffix:
-    Gui, Add, Edit, x120 y102 w130 h25 vGuiSuffix gUpdatePreview, %suffix%
+    ; Bagong Feature: Format Customization (Dropdown)
+    Gui, Add, Text, x25 y105 w100 h20, No. of Digits:
+    ; Gagawa ng listahan (5|6|7|8), at lalagyan ng dalawang pipe (||) ang kasalukuyang naka-save para maging default choice
+    opts := ""
+    Loop, 4 {
+        curr := A_Index + 4 ; Mag-uumpisa sa 5 (1+4) hanggang 8 (4+4)
+        if (curr == digits)
+            opts .= curr . "||"
+        else
+            opts .= curr . "|"
+    }
+    Gui, Add, DropdownList, x120 y102 w130 h21 R4 vGuiDigits gUpdatePreview, %opts%
     
-    ; Preview Box na may natatanging kulay/style
+    Gui, Add, Text, x25 y140 w100 h20, Suffix:
+    Gui, Add, Edit, x120 y137 w130 h25 vGuiSuffix gUpdatePreview, %suffix%
+    
+    ; Preview Box (Inadjust ang Y position pababa)
     Gui, Font, b s10, Segoe UI
     current_preview := GenerateInvoice()
-    Gui, Add, Text, x10 y175 w260 h20 Center vGuiPreview +BackgroundTrans +Theme, Preview: %current_preview%
+    Gui, Add, Text, x10 y210 w260 h20 Center vGuiPreview +BackgroundTrans +Theme, Preview: %current_preview%
     
-    ; Buttons
+    ; Buttons (Inadjust ang Y position at nagdagdag ng Reset Button sa gitna)
     Gui, Font, Norm s10, Segoe UI
-    Gui, Add, Button, x30 y205 w100 h30 gSaveSettings Default, Save
-    Gui, Add, Button, x150 y205 w100 h30 gGuiClose, Cancel
+    Gui, Add, Button, x15 y240 w75 h30 gSaveSettings Default, Save
+    Gui, Add, Button, x100 y240 w75 h30 gResetGUI, Reset    ; Bagong Feature: QoL Reset
+    Gui, Add, Button, x185 y240 w75 h30 gGuiClose, Cancel
     
-    Gui, Show, w280 h250, Invoice Config v2.0
+    ; Nilakihan ang kabuuang window (w280 h290) para swak lahat ng elements
+    Gui, Show, w280 h290, Invoice Config v2.1
 return
 
 ; --- GUI ACTIONS ---
 
 UpdatePreview:
-    Gui, Submit, NoHide ; Kunin ang data nang hindi sinasara ang GUI
-    ; Gumawa ng temporary preview base sa kasalukuyang tina-type
-    temp_preview := GenerateInvoice(GuiPrefix, GuiNum, GuiSuffix)
+    Gui, Submit, NoHide 
+    
+    ; Pasa pati ang GuiDigits sa preview generator
+    temp_preview := GenerateInvoice(GuiPrefix, GuiNum, GuiSuffix, GuiDigits)
     GuiControl,, GuiPreview, Preview: %temp_preview%
+return
+
+ResetGUI:
+    ; QoL feature: Babasahin ulit ang INI at ire-refresh ang mga laman ng GUI boxes nang hindi ito sinasara
+    LoadSettings()
+    GuiControl,, GuiPrefix, %prefix%
+    GuiControl,, GuiNum, %current_num%
+    GuiControl, ChooseString, GuiDigits, %digits%
+    GuiControl,, GuiSuffix, %suffix%
+    
+    ; I-update rin ang preview matapos mag-reset
+    temp_preview := GenerateInvoice(prefix, current_num, suffix, digits)
+    GuiControl,, GuiPreview, Preview: %temp_preview%
+    
+    SoundBeep, 600, 50 ; Konting audio feedback para alam mong nag-reset
 return
 
 SaveSettings:
     Gui, Submit
     
-    ; Simple Validation: Huwag payagan kung blangko ang Number field
     if (GuiNum == "") {
         MsgBox, 48, Error, 'Next Number' cannot be empty!, 2
         return
@@ -101,6 +134,7 @@ SaveSettings:
     
     IniWrite, %GuiPrefix%, settings.ini, Settings, Prefix
     IniWrite, %GuiNum%, settings.ini, Sequence, LastNumber
+    IniWrite, %GuiDigits%, settings.ini, Settings, Digits ; Sine-save na rin ang haba ng digits
     IniWrite, %GuiSuffix%, settings.ini, Settings, Suffix
     
     LoadSettings()
