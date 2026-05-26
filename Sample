@@ -3,12 +3,11 @@
 SendMode Input
 SetWorkingDir %A_ScriptDir%
 
-; I-load ang mga settings mula sa INI File
 LoadSettings()
 
 return ; End of Auto-Execute Section
 
-; --- MGA FUNCTIONS ---
+; --- FUNCTIONS ---
 
 LoadSettings() {
     global current_num, prefix, suffix
@@ -23,7 +22,7 @@ GenerateInvoice() {
     return prefix . formatted_num . suffix
 }
 
-; --- MGA HOTKEYS ---
+; --- HOTKEYS ---
 
 ; [Alt + F9] - I-type ang Invoice Number (Gaya ng dati pero mas safe gamit ang clipboard)
 !F9::
@@ -44,18 +43,18 @@ GenerateInvoice() {
     IniWrite, %current_num%, settings.ini, Sequence, LastNumber
 return
 
-; [Alt + F10] - Dito lalabas ang Simple GUI Control Panel
+;  -  GUI Control Panel
 !F10::
-    ; Reload muna para laging updated ang ipapakita sa GUI
+    
     LoadSettings() 
     
-    ; Tiyakin na walang duplicate na GUI na bubukas
+    
     Gui, Destroy 
     
     Gui, Font, s10, Segoe UI
     Gui, Add, GroupBox, x10 y10 w260 h150, Invoice Settings
     
-    ; Mga Inputs at Labels sa loob ng GUI
+    ; GUI INPUT AND LABELS
     Gui, Add, Text, x25 y35 w100 h20, Prefix:
     Gui, Add, Edit, x120 y32 w130 h25 vGuiPrefix, %prefix%
     
@@ -65,7 +64,7 @@ return
     Gui, Add, Text, x25 y105 w100 h20, Suffix:
     Gui, Add, Edit, x120 y102 w130 h25 vGuiSuffix, %suffix%
     
-    ; Preview Label para makita ang sample habang nag-eedit
+    ; Preview Label 
     current_preview := GenerateInvoice()
     Gui, Add, Text, x10 y175 w260 h20 Center vGuiPreview +BackgroundTrans, Preview: %current_preview%
     
@@ -73,28 +72,28 @@ return
     Gui, Add, Button, x30 y205 w100 h30 gSaveSettings Default, Save
     Gui, Add, Button, x150 y205 w100 h30 gGuiClose, Cancel
     
-    ; Ipakita ang GUI window
+    ; SHOW GUI window
     Gui, Show, w280 h250, Invoice Config
 return
 
 ; --- GUI ACTIONS ---
 
-; Kapag clinick ang Save Button
+
 SaveSettings:
-    Gui, Submit ; Kunin lahat ng nilagay ng user sa mga Edit boxes
+    Gui, Submit 
     
-    ; I-save sa INI file ang mga bagong settings
+    
     IniWrite, %GuiPrefix%, settings.ini, Settings, Prefix
     IniWrite, %GuiNum%, settings.ini, Sequence, LastNumber
     IniWrite, %GuiSuffix%, settings.ini, Settings, Suffix
     
-    ; I-refresh ang mga variables sa memory
+    
     LoadSettings()
     
     MsgBox, 64, Success, Settings updated successfully!, 1.5
 return
 
-; Kapag clinick ang Cancel o sinara ang [X] button ng window
+
 GuiClose:
     Gui, Destroy
 return
