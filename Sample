@@ -4,7 +4,7 @@ SendMode Input
 SetWorkingDir %A_ScriptDir%
 
 global current_num, prefix, suffix, last_generated := "None"
-global GuiHwnd
+global GuiHwnd, AboutHwnd
 
 LoadSettings()
 return 
@@ -30,6 +30,7 @@ GenerateInvoice(p := "", n := 0, s := "") {
 
 ; --- HOTKEYS ---
 
+; Alt + F9: Generate and Paste Sequence
 !F9::
     Critical 
     invoice_string := GenerateInvoice()
@@ -47,6 +48,60 @@ return
 
 RemoveToolTip:
     ToolTip
+return
+
+; --- ABOUT & DOWNLOAD INFO GUI (F10) ---
+
+F10::
+    Gui, AboutGui:Destroy
+    
+    ; Borderless, AlwaysOnTop, at kukunin ang HWND para sa animation
+    Gui, AboutGui:+LastFound -Caption +AlwaysOnTop +HwndAboutHwnd
+    
+    ; Premium Light Palette (Off-white background)
+    Gui, AboutGui:Color, F8F9FA, FFFFFF
+    
+    ; Custom Title Bar
+    Gui, AboutGui:Font, b s10 c4A5568, Segoe UI
+    Gui, AboutGui:Add, Text, x15 y12 w200 h20 +BackgroundTrans, ABOUT GENERATOR
+    
+    ; Soft Red Close Button (×) sa kanang sulok
+    Gui, AboutGui:Font, b s12 cE53E3E
+    Gui, AboutGui:Add, Text, x260 y10 w25 h20 Center gAboutClose +BackgroundTrans, ×
+    
+    ; Indigo Accent Top Divider Line
+    Gui, AboutGui:Add, Progress, x0 y38 w290 h3 Background4F46E5 c4F46E5, 100
+    
+    ; Content - Developer Info
+    Gui, AboutGui:Font, Norm s10 c4A5568, Segoe UI
+    Gui, AboutGui:Add, Text, x20 y60 w250 h20, Developed by:
+    Gui, AboutGui:Font, b c1A202C
+    Gui, AboutGui:Add, Text, x20 y80 w250 h20, Jerom Requillo
+    
+    ; Content - Download & Source Link
+    Gui, AboutGui:Font, Norm s10 c4A5568
+    Gui, AboutGui:Add, Text, x20 y115 w250 h20, Source & Updates:
+    
+    ; Clickable Indigo Underlined Link
+    Gui, AboutGui:Font, b c4F46E5 U
+    Gui, AboutGui:Add, Text, x20 y135 w250 h20 gOpenGitHub +BackgroundTrans, GitHub Repository
+    
+    ; Intercept click para pwedeng i-drag kahit walang title bar
+    OnMessage(0x0201, "WM_LBUTTONDOWN")
+    
+    ; Smooth Fade-In Animation
+    DllCall("AnimateWindow", "UInt", AboutHwnd, "Int", 120, "UInt", 0xa0000)
+    Gui, AboutGui:Show, w290 h180, About InvoicePro
+return
+
+AboutClose:
+    ; Fade-out bago i-destroy ang window
+    DllCall("AnimateWindow", "UInt", AboutHwnd, "Int", 100, "UInt", 0x90000)
+    Gui, AboutGui:Destroy
+return
+
+OpenGitHub:
+    Run, https://github.com/JeromRequillo/Auto-Incrementing-Generator
 return
 
 ; --- BORDERLESS PREMIUM LIGHT GUI (Alt + F10) ---
@@ -69,7 +124,7 @@ return
     
     ; Custom Modern Close Button (X) sa sulok (#E53E3E - Soft Red)
     Gui, Font, b s12 cE53E3E
-    Gui, Add, Text, x300 y10 w25 h20 Center gGuiClose +BackgroundTrans +gGuiClose, ×
+    Gui, Add, Text, x300 y10 w25 h20 Center gGuiClose +BackgroundTrans, ×
     
     ; Decorative Top Divider Line (#4F46E5 - Premium Indigo Accent)
     Gui, Add, Progress, x0 y38 w330 h3 Background4F46E5 c4F46E5, 100
@@ -91,7 +146,6 @@ return
     Gui, Add, Edit, x120 y138 w185 h26 c1A202C vGuiSuffix gUpdatePreview, %suffix%
     
     ; --- FLAT LIVE PREVIEW BOX ---
-    ; Ang preview background ay Pure White ngayon para malinis tingnan
     Gui, Font, b s9 c4F46E5
     Gui, Add, Text, x20 y185 w290 h18 +BackgroundTrans, PREVIEW (Click text to copy instantly)
     
@@ -115,13 +169,13 @@ return
     ; Smooth Fade-In
     DllCall("AnimateWindow", "UInt", GuiHwnd, "Int", 150, "UInt", 0xa0000)
     
-    
     Gui, Show, w330 h345, InvoicePro
 return
 
 ; --- SYSTEM INTERACTS & ACTIONS ---
 
 WM_LBUTTONDOWN() {
+    ; Pinapayagan ang pag-drag sa bintana kahit walang traditional window frame
     PostMessage, 0xA1, 2,,, A
 }
 
