@@ -56,7 +56,7 @@ return
     Gui, Destroy 
     
     Gui, Font, s10, Segoe UI
-    ; Nilakihan nang kaunti ang taas ng GroupBox para magkasya ang bagong dropdown
+    
     Gui, Add, GroupBox, x10 y10 w260 h185, Invoice Settings
     
     ; LIVE UPDATE PREVIEW
@@ -66,9 +66,9 @@ return
     Gui, Add, Text, x25 y70 w100 h20, Next Number:
     Gui, Add, Edit, x120 y67 w130 h25 vGuiNum Number gUpdatePreview, %current_num%
     
-    ; Bagong Feature: Format Customization (Dropdown)
+    ;  Format Customization (Dropdown)
     Gui, Add, Text, x25 y105 w100 h20, No. of Digits:
-    ; Gagawa ng listahan (5|6|7|8), at lalagyan ng dalawang pipe (||) ang kasalukuyang naka-save para maging default choice
+    
     opts := ""
     Loop, 4 {
         curr := A_Index + 4 ; Mag-uumpisa sa 5 (1+4) hanggang 8 (4+4)
@@ -82,18 +82,17 @@ return
     Gui, Add, Text, x25 y140 w100 h20, Suffix:
     Gui, Add, Edit, x120 y137 w130 h25 vGuiSuffix gUpdatePreview, %suffix%
     
-    ; Preview Box (Inadjust ang Y position pababa)
+    ; Preview Box 
     Gui, Font, b s10, Segoe UI
     current_preview := GenerateInvoice()
     Gui, Add, Text, x10 y210 w260 h20 Center vGuiPreview +BackgroundTrans +Theme, Preview: %current_preview%
     
-    ; Buttons (Inadjust ang Y position at nagdagdag ng Reset Button sa gitna)
+    ; Buttons
     Gui, Font, Norm s10, Segoe UI
     Gui, Add, Button, x15 y240 w75 h30 gSaveSettings Default, Save
     Gui, Add, Button, x100 y240 w75 h30 gResetGUI, Reset    ; Bagong Feature: QoL Reset
     Gui, Add, Button, x185 y240 w75 h30 gGuiClose, Cancel
     
-    ; Nilakihan ang kabuuang window (w280 h290) para swak lahat ng elements
     Gui, Show, w280 h290, Invoice Config v2.1
 return
 
@@ -102,20 +101,18 @@ return
 UpdatePreview:
     Gui, Submit, NoHide 
     
-    ; Pasa pati ang GuiDigits sa preview generator
     temp_preview := GenerateInvoice(GuiPrefix, GuiNum, GuiSuffix, GuiDigits)
     GuiControl,, GuiPreview, Preview: %temp_preview%
 return
 
 ResetGUI:
-    ; QoL feature: Babasahin ulit ang INI at ire-refresh ang mga laman ng GUI boxes nang hindi ito sinasara
+    
     LoadSettings()
     GuiControl,, GuiPrefix, %prefix%
     GuiControl,, GuiNum, %current_num%
     GuiControl, ChooseString, GuiDigits, %digits%
     GuiControl,, GuiSuffix, %suffix%
     
-    ; I-update rin ang preview matapos mag-reset
     temp_preview := GenerateInvoice(prefix, current_num, suffix, digits)
     GuiControl,, GuiPreview, Preview: %temp_preview%
     
