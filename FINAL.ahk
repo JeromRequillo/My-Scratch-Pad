@@ -2,11 +2,11 @@
 #SingleInstance Force
 
 ; --- SYSTEM TRAY CONFIGURATION ---
-A_IconTip := "Invoice & Text Manager"
+A_IconTip := "🎯 KeyTap pro v4.0"
 TrayRecalcMenu()
 
 ; Global Variables
-global current_num := "00000"
+global current_num := "0000000"
 global prefix := "AAPI"
 global suffix := "S"
 global mainGui := "" 
@@ -54,8 +54,7 @@ LoadSettings() {
     } catch {
         ; Default hotkeys kung bago o walang laman ang INI
         hotkeyList := [
-            {key: "!S", txt: "SAMPLE TXT"},
-
+            {key: "!S", txt: "SAMPLE TXT"}
         ]
     }
 }
@@ -156,12 +155,12 @@ LaunchGUI() {
     if (mainGui != "")
         mainGui.Destroy()
     
-    mainGui := Gui("-MaximizeBox", "Invoice & Text Manager")
+    mainGui := Gui("-MaximizeBox", "🎯 KeyTap Pro v4.0")
     mainGui.OnEvent("Close", (*) => mainGui.Destroy()) 
     mainGui.SetFont("s10", "Segoe UI")
     
-    ; Setup Tab Navigation
-    tabMenu := mainGui.Add("Tab3", "x10 y10 w480 h350", ["Invoice Config", "Custom Text Hotkeys", "VAT Calculator", "About"])
+    ; Setup Tab Navigation (Tinaasan natin ang height ng tab control para magkasya ang instruction)
+    tabMenu := mainGui.Add("Tab3", "x10 y10 w480 h400", ["Invoice Config", "Custom Text Hotkeys", "VAT Calculator", "About"])
     
     ; --- TAB 1: INVOICE CONFIGURATION ---
     tabMenu.UseTab(1)
@@ -183,23 +182,45 @@ LaunchGUI() {
     
     mainGui.SetFont("bold s10", "Segoe UI")
     current_preview := GenerateInvoice()
-    guiCtrl_PreviewText := mainGui.Add("Text", "x20 y175 w460 h20 Center +BackgroundTrans", "Preview: " . current_preview)
-    mainGui.SetFont("Norm s10", "Segoe UI")
+    guiCtrl_PreviewText := mainGui.Add("Text", "x20 y160 w460 h20 Center +BackgroundTrans", "Preview: " . current_preview)
     
-    ; --- TAB 2: CUSTOM TEXT HOTKEYS (NOW DYNAMIC & SCROLLABLE!) ---
+ 
+    mainGui.SetFont("Norm s10 cGray", "Segoe UI")
+    
+    invoiceTxt := "
+    (
+    💡PAANO GAMITIN ANG INVOICE GENERATOR:
+
+    1. Itakda ang 'Prefix' (unahan), 'Next Number' (gitna), at 'Suffix' (hulihan).
+
+    2. I-click ang [ Save All Changes ] para mai-save ang iyong configuration.
+
+    3. Pindutin ang [ Alt + F9 ] kahit saan para awtomatikong i-type ang Invoice!
+
+    💡 MAHALAGANG PAALALA:
+
+    • Auto-Increment: Sa tuwing pipindutin mo ang Alt + F9, awtomatikong madadagdagan ng +1 ang Next Number at mase-save sa settings.ini.
+
+    • Format Length: Ang system ay gumagamit ng fixed 7-digit padding para sa numero (e.g., '1' ay magiging '0000001') para mapanatili ang tamang haba.
+
+    • Reset Button: I-click ang 'Reset' kung nais mong ibalik sa 0 ang panimulang numero.
+    )"
+    mainGui.Add("Edit", "x30 y190 w420 h200 +ReadOnly +Wrap +VScroll -WantReturn", invoiceTxt)
+    
+
+    mainGui.SetFont("Norm s10 cDefault", "Segoe UI")
+    
+    ; --- TAB 2: CUSTOM TEXT HOTKEYS ---
     tabMenu.UseTab(2)
     
-    ; Nagdagdag tayo ng ListView table na may scrollbar automatically kapag dumami ang keys
     LV := mainGui.Add("ListView", "x20 y50 w440 h150 +Grid -Multi", ["Shortcut Key", "Text / Name to Output"])
     LV.ModifyCol(1, 100)
     LV.ModifyCol(2, 315)
     
-    ; I-populate ang ListView mula sa hotkeyList variable
     for hk in hotkeyList {
         LV.Add(, hk.key, hk.txt)
     }
 
-    ; Input Boxes para sa pagdaragdag o pag-edit ng hotkeys
     mainGui.SetFont("s9", "Segoe UI")
     mainGui.Add("Text", "x20 y210 w80 h20", "Shortcut Key:")
     mainGui.Add("Text", "x110 y210 w200 h20", "Text to Output:")
@@ -207,14 +228,12 @@ LaunchGUI() {
     editKey := mainGui.Add("Edit", "x20 y230 w80 h25")
     editTxt := mainGui.Add("Edit", "x110 y230 w350 h25")
     
-    ; Action Buttons para sa Table Control
     btnAdd := mainGui.Add("Button", "x20 y265 w100 h28", "➕ Add / Update")
     btnDel := mainGui.Add("Button", "x130 y265 w100 h28", "❌ Delete Line")
     
-    ; Lagyan ng click events ang mga bagong buttons
     btnAdd.OnEvent("Click", AddUpdateHotkey)
     btnDel.OnEvent("Click", DeleteHotkey)
-    LV.OnEvent("Click", SelectHotkey) ; Kapag kinlik ang row, mapupunta sa edit boxes ang text
+    LV.OnEvent("Click", SelectHotkey) 
 
     mainGui.SetFont("s8 cGray Italic", "Segoe UI")
     mainGui.Add("Text", "x20 y305 w440 h35", "Note: Gamitin ang '!' para sa Alt, '^' para sa Ctrl, '+' para sa Shift. (e.g. !A = Alt+A)")
@@ -226,33 +245,40 @@ LaunchGUI() {
     mainGui.Add("Text", "x30 y60 w400 h25 c0x0066CC", "Automated VAT Deductor Tool")
     mainGui.SetFont("s10 Norm", "Segoe UI")
     
-    ; GUMAMIT NG CONTINUATION SECTION PARA SA MAHABANG TEXT:
     vatTxt := "
     (
-    Paano gamitin:
+    💡PAANO GAMITIN:
+
     1. I-highlight/I-select ang presyo na may VAT (Kahit may kuwit o comma).
+
     2. Pindutin ang [ Alt + V ].
+
     3. Awtomatikong mada-deduct ang 12% VAT at mapapalitan ang text!
 
     💡 MAHALAGANG PAALALA SA VAT TOOL:
+
     • Numero at kuwit lang ang i-highlight: Huwag isama ang currency symbols tulad ng "₱", "PHP", o "$", pati na rin ang mga letra o spacing (e.g., "₱ 1,500" -> i-highlight lang ang "1,500"). Mag-e-error ang calculator kapag may kasamang letra.
+
     • Rounding off: Awtomatikong sine-set ng tool ang resulta sa dalawang decimal places (e.g., 133.93).
+
     • Paano mag-Undo: Kung nagkamali ka ng na-highlight o hindi mo sinasadyang mapalitan ang text, pindutin lang ang [ Ctrl + Z ] sa iyong keyboard para bumalik sa dati ang text.
+
     • Clipboard backup: Ang huling net amount na kinalkula ay mananatiling naka-copy sa iyong clipboard (ready to paste).
     )"
     
-    mainGui.Add("Edit", "x30 y95 w420 h200 +ReadOnly +Wrap +VScroll -WantReturn", vatTxt)
+    mainGui.Add("Edit", "x30 y95 w420 h290 +ReadOnly +Wrap +VScroll -WantReturn", vatTxt)
+    
     ; --- TAB 4: ABOUT & CREDITS ---
     tabMenu.UseTab(4)
     mainGui.SetFont("bold s11", "Segoe UI")
-    mainGui.Add("Text", "x25 y50 w400 h25 c0x0066CC", "Auto-Increment & Macro Manager")
+    mainGui.Add("Text", "x25 y50 w400 h25 c0x0066CC", "🎯 KeyTap Pro v4.0")
     mainGui.SetFont("s9", "Segoe UI")
     mainGui.Add("Text", "x25 y75 w400 h18", "Version: 4.0.0 (Dynamic ListView)")
     mainGui.Add("Text", "x25 y95 w400 h18", "Developer: Jerom Requillo")
     
     mainGui.SetFont("italic s9", "Segoe UI")
     mainGui.Add("Link", "x25 y120 w400 h20", 'GitHub: <a href="https://github.com/JeromRequillo">@JeromRequillo</a>')
-    mainGui.Add("Link", "x25 y140 w400 h20", 'Repository: <a href="https://github.com/JeromRequillo/Ultimate-System-Master">JeromRequillo/Ultimate-System-Master</a>')
+    mainGui.Add("Link", "x25 y140 w400 h20", 'Repository: <a href="https://github.com/JeromRequillo/🎯 KeyTap Pro v4.0">JeromRequillo/🎯 KeyTap Pro v4.0</a>')
     
     mainGui.SetFont("s10 Norm", "Segoe UI")
     
@@ -264,32 +290,40 @@ LaunchGUI() {
     [Alt + V] -> Deduct 12% VAT from Selected Text
 
     🛠️ Troubleshooting & Diagnostic Guide:
+
     1. Hotkeys Are Unresponsive
+
        - Verify that the application is running by checking for the 'H' icon in the Windows System Tray (lower-right corner of the taskbar).
        - If the application is active but non-responsive, right-click the system tray icon and select 'Reload Script'.
+
     2. Configuration Settings Fail to Save
+
        - Ensure that the 'settings.ini' configuration file exists within the directory and is not marked as 'Read-Only'.
+
     3. Application Crashes or Throws Fatal Errors
+
        - Review your custom macro entries. Ensure that the shortcut key string is properly formatted and that no duplicate hotkeys are assigned to conflicting actions.
 
     📂 Deployment Information:
+
     This application is fully portable and operates independently of the Windows Registry. It can be executed from a shared network drive or a USB storage device, or placed in the Windows Startup directory for automatic initialization. All application states are recorded locally in 'settings.ini'.
     )"
     
-    mainGui.Add("Edit", "x25 y170 w420 h130 +ReadOnly +Wrap +VScroll -WantReturn", aboutTxt)
+    mainGui.Add("Edit", "x25 y170 w420 h220 +ReadOnly +Wrap +VScroll -WantReturn", aboutTxt)
     
-    ; CRITICAL FIX: Sinasabi nito sa GUI na tapos na ang mga elements sa loob ng Tabs
     tabMenu.UseTab()
     
-    ; --- BOTTOM BUTTONS (Naka-anchor na sa pinakailalim ng Main Window) ---
+    ; --- BOTTOM BUTTONS (Ibiniyaba ang pwesto para umakma sa bagong window height) ---
     mainGui.SetFont("Norm s10", "Segoe UI")
-    btnSave := mainGui.Add("Button", "x130 y375 w110 h32 Default", "Save All Changes")
+    btnSave := mainGui.Add("Button", "x130 y425 w110 h32 Default", "Save All Changes")
     btnSave.OnEvent("Click", SaveSettings)
     
-    btnCancel := mainGui.Add("Button", "x260 y375 w110 h32", "Close Window")
+    btnCancel := mainGui.Add("Button", "x260 y425 w110 h32", "Close Window")
     btnCancel.OnEvent("Click", (*) => mainGui.Destroy())
     
-    mainGui.Show("w500 h420")
+    ; Pinalaki ang window mula h420 papuntang h470
+    mainGui.Show("w500 h470")
+    
     ; --- GUI INTERNAL FUNCTIONS ---
     
     UpdatePreview(*) {
@@ -340,7 +374,6 @@ LaunchGUI() {
     }
 
     SaveSettings(*) {
-        ; Tinawag natin ang lahat ng global variables na kailangang i-update
         global prefix, current_num, suffix, hotkeyList
 
         if (guiCtrl_Num.Value == "") {
@@ -348,20 +381,17 @@ LaunchGUI() {
             return
         }
         
-        ; 1. I-update ang Invoice settings sa global memory
         prefix := guiCtrl_Prefix.Value
         current_num := Format("{:05}", Number(guiCtrl_Num.Value)) 
         suffix := guiCtrl_Suffix.Value
         
-        ; Isulat sa INI file ang Invoice settings
         IniWrite(prefix, "settings.ini", "Settings", "Prefix")
         IniWrite(Number(guiCtrl_Num.Value), "settings.ini", "Sequence", "LastNumber")
         IniWrite(suffix, "settings.ini", "Settings", "Suffix")
         
-        ; 2. I-clear at i-update ang Hotkeys section sa INI at Global Memory
         try IniDelete("settings.ini", "Hotkeys")
         
-        hotkeyList := [] ; Reset ang global list bago punuin uli
+        hotkeyList := [] 
         Loop LV.GetCount() {
             hKey := LV.GetText(A_Index, 1)
             hTxt := LV.GetText(A_Index, 2)
@@ -370,7 +400,6 @@ LaunchGUI() {
             hotkeyList.Push({key: hKey, txt: hTxt})
         }
         
-        ; 3. CRITICAL FIX: I-re-register ang custom hotkeys gamit ang bagong listahan
         RegisterCustomHotkeys()
         
         MsgBox("All settings and dynamic hotkeys updated successfully!", "Success", "64 T1.5")
