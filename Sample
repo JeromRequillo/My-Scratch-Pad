@@ -1,180 +1,59 @@
-#NoEnv
+#Requires AutoHotkey v2.0
 #SingleInstance Force
-SendMode Input
-SetWorkingDir %A_ScriptDir%
 
-global current_num, prefix, suffix, last_generated := "None"
-global GuiHwnd
+; ==============================================================================
+; USER CONFIGURATION (Baguhin mo rito ang mga file paths)
+; ==============================================================================
+global ServerFolder := "C:\Path\To\Your\Server\Folder"  ; Palitan ng actual server path
+global LocalFolder  := "C:\Users\Username\Desktop\MyFolder" ; Palitan ng desktop folder path
 
-LoadSettings()
-return 
-
-; --- FUNCTIONS ---
-
-LoadSettings() {
-    global current_num, prefix, suffix
-    IniRead, current_num, settings.ini, Sequence, LastNumber, 00000
-    IniRead, prefix, settings.ini, Settings, Prefix, AAPI
-    IniRead, suffix, settings.ini, Settings, Suffix, S
-}
-
-GenerateInvoice(p := "", n := 0, s := "") {
-    global prefix, current_num, suffix
-    target_prefix := (p == "") ? prefix : p
-    target_num := (n == 0) ? current_num : n
-    target_suffix := (s == "") ? suffix : s
-    
-    formatted_num := Format("{:07}", target_num)
-    return target_prefix . formatted_num . target_suffix
-}
-
-; --- HOTKEYS ---
-
-!F9::
-    Critical 
-    invoice_string := GenerateInvoice()
-    SendInput, %invoice_string%
-    
-    SoundBeep, 750, 50 
-    ToolTip, Sent: %invoice_string%
-    SetTimer, RemoveToolTip, -2000
-    
-    last_generated := invoice_string
-    current_num += 1
-    IniWrite, %current_num%, settings.ini, Sequence, LastNumber
-    IniWrite, %last_generated%, settings.ini, Sequence, LastGenerated
-return
-
-RemoveToolTip:
-    ToolTip
-return
-
-; --- BORDERLESS PREMIUM LIGHT GUI (Alt + F10) ---
-
-!F10::
-    LoadSettings() 
-    Gui, Destroy 
-    
-    Gui, +LastFound -Caption +AlwaysOnTop +HwndGuiHwnd
-    
-    ; --- PREMIUM LIGHT PALETTE ---
-    ; Window Background: #F8F9FA (Soft Off-White/Platinum)
-    ; Control Background: #FFFFFF (Pure White)
-    Gui, Color, F8F9FA, FFFFFF 
-    
-    ; --- CUSTOM TITLE BAR ---
-    ; Text Color: #4A5568 (Deep Slate/Charcoal)
-    Gui, Font, b s10 c4A5568, Segoe UI
-    Gui, Add, Text, x15 y12 w200 h20 +BackgroundTrans vTitleText, INVOICE SERIES MANAGER 
-    
-    ; Custom Modern Close Button (X) sa sulok (#E53E3E - Soft Red)
-    Gui, Font, b s12 cE53E3E
-    Gui, Add, Text, x300 y10 w25 h20 Center gGuiClose +BackgroundTrans, ×
-    
-    ; Decorative Top Divider Line (#4F46E5 - Premium Indigo Accent)
-    Gui, Add, Progress, x0 y38 w330 h3 Background4F46E5 c4F46E5, 100
-    
-    ; --- MAIN CONTROLS ---
-    ; Text labels: #4A5568 (Charcoal)
-    Gui, Font, Norm s10 c4A5568, Segoe UI
-    
-    ; Prefix Field
-    Gui, Add, Text, x20 y60 w90 h25 +0x200, Prefix
-    Gui, Add, Edit, x120 y58 w185 h26 c1A202C vGuiPrefix gUpdatePreview, %prefix%
-    
-    ; Next Number Field
-    Gui, Add, Text, x20 y100 w90 h25 +0x200, Next Number
-    Gui, Add, Edit, x120 y98 w185 h26 c1A202C vGuiNum Number gUpdatePreview, %current_num%
-    
-    ; Suffix Field
-    Gui, Add, Text, x20 y140 w90 h25 +0x200, Suffix
-    Gui, Add, Edit, x120 y138 w185 h26 c1A202C vGuiSuffix gUpdatePreview, %suffix%
-    
-    ; --- FLAT LIVE PREVIEW BOX ---
-    Gui, Font, b s9 c4F46E5
-    Gui, Add, Text, x20 y185 w290 h18 +BackgroundTrans, PREVIEW (Click text to copy instantly)
-    
-    current_preview := GenerateInvoice(prefix, current_num, suffix)
-    ; Text Preview Accent: #B7791F (Premium Champagne Gold)
-    Gui, Font, b s14 cB7791F
-    Gui, Add, Text, x20 y205 w290 h35 Center vGuiPreview gCopyOnPreview +0x200 +Border, %current_preview%
-    
-    ; --- APP FOOTER ACTION BUTTONS ---
-    Gui, Font, Norm s10 c4A5568
-    Gui, Add, Button, x20 y265 w135 h35 gSaveSettings +Default, SAVE CHANGES
-    Gui, Add, Button, x175 y265 w135 h35 gGuiClose, CANCEL
-    
-    ; Status Label Text  (#718096 - Muted Gray)
-    Gui, Font, s8 c718096
-    Gui, Add, Text, x20 y315 w290 h15 +BackgroundTrans, Last Active String: %last_generated%
-    
-    ; --- SYSTEM CREDITS & DOWNLOAD FOOTER ---
-    Gui, Font, s8 c718096
-    Gui, Add, Text, x20 y342 w150 h15 +BackgroundTrans, Developer: Jerom Requillo
-    
-    ; Clickable Link (Indigo Accent with Underline)
-    Gui, Font, b s8 c4F46E5 U
-    Gui, Add, Text, x210 y342 w100 h15 Right gOpenGitHub +BackgroundTrans, Download Updates
-    
-    ; Intercept click for borderless window drag
-    OnMessage(0x0201, "WM_LBUTTONDOWN")
-    
-    ; Smooth Fade-In
-    DllCall("AnimateWindow", "UInt", GuiHwnd, "Int", 150, "UInt", 0xa0000)
-    
-    ; In-adjust ang height mula 345 naging 370 para kumasya ang bagong info sa pinaka-ilalim
-    Gui, Show, w330 h370, InvoicePro
-return
-
-; --- SYSTEM INTERACTS & ACTIONS ---
-
-WM_LBUTTONDOWN() {
-    PostMessage, 0xA1, 2,,, A
-}
-
-UpdatePreview:
-    Gui, Submit, NoHide 
-    if (GuiNum == "") {
-        GuiControl, +cE53E3E, GuiPreview
-        GuiControl,, Preview, [ INPUT NUMBER ]
+; ==============================================================================
+; HOTKEY TRIGGER: Pindutin ang F8 para simulan ang proseso
+; ==============================================================================
+F8:: {
+    ; Siguraduhing existing ang folders bago magpatuloy
+    if !DirExist(ServerFolder) {
+        MsgBox("Error: Hindi mahanap ang Server Folder.`nPakicheck ang path: " ServerFolder, "Error", 48)
         return
     }
-    GuiControl, +cB7791F, GuiPreview
-    temp_preview := GenerateInvoice(GuiPrefix, GuiNum, GuiSuffix)
-    GuiControl,, GuiPreview, %temp_preview%
-return
-
-CopyOnPreview:
-    Gui, Submit, NoHide
-    if (GuiNum != "") {
-        copied_text := GenerateInvoice(GuiPrefix, GuiNum, GuiSuffix)
-        Clipboard := copied_text
-        ToolTip, Copied to Clipboard: %copied_text%
-        SetTimer, RemoveToolTip, -1200
+    if !DirExist(LocalFolder) {
+        ; Kung wala pa yung desktop folder, gagawin ito ng script nang kusa
+        DirCreate(LocalFolder)
     }
-return
 
-SaveSettings:
-    Gui, Submit
-    if (GuiNum == "") {
-        MsgBox, 48, Application Error, Please input a valid starting number sequence.
-        return
+    FileCount := 0
+    ErrorCount := 0
+
+    ; I-loop ang lahat ng files sa loob ng Server Folder
+    LoopFiles ServerFolder "\*.*" {
+        SourceFile := A_LoopFilePath
+        DestFile := LocalFolder "\" A_LoopFileName
+
+        try {
+            ; 1. Kopyahin ang file papuntang Desktop folder (Overwrite kung may kaparehong pangalan)
+            FileCopy(SourceFile, DestFile, 1)
+            
+            ; 2. Burahin ang file sa server kapag matagumpay ang pagkaka-copy
+            FileDelete(SourceFile)
+            
+            FileCount++
+        } catch as err {
+            ErrorCount++
+            ; I-skip ang file kung kasalukuyan pang ginagamit ng system o may error
+            continue
+        }
     }
-    
-    GuiNum := GuiNum + 0 
-    IniWrite, %GuiPrefix%, settings.ini, Settings, Prefix
-    IniWrite, %GuiNum%, settings.ini, Sequence, LastNumber
-    IniWrite, %GuiSuffix%, settings.ini, Settings, Suffix
-    
-    LoadSettings()
-    Gui, Destroy
-return
 
-GuiClose:
-    DllCall("AnimateWindow", "UInt", GuiHwnd, "Int", 100, "UInt", 0x90000)
-    Gui, Destroy
-return
-
-OpenGitHub:
-    Run, https://github.com/JeromRequillo/Auto-Incrementing-Generator
-return
+    ; ==============================================================================
+    ; NOTIFICATION (Magpapakita ng summary pagkatapos ng proseso)
+    ; ==============================================================================
+    if (FileCount > 0) {
+        MsgBox(FileCount " (na) file ang matagumpay na nailipat sa Desktop!`nMga nagka-error: " ErrorCount, "Success", 64)
+    } else if (ErrorCount > 0) {
+        MsgBox("Walang file na nailipat. " ErrorCount " (na) file ang naka-lock o may error.", "Warning", 48)
+    } else {
+        ; Tooltip lang para hindi istorbo kung walang nakitang file sa server
+        ToolTip("Walang file na nahanap sa server.")
+        SetTimer () => ToolTip(), -2000 ; Mawawala ang tooltip pagkalipas ng 2 segundo
+    }
+}
