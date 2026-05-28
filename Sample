@@ -2,58 +2,58 @@
 #SingleInstance Force
 
 ; ==============================================================================
-; USER CONFIGURATION (Baguhin mo rito ang mga file paths)
+; USER CONFIGURATION 
 ; ==============================================================================
-global ServerFolder := "C:\Path\To\Your\Server\Folder"  ; Palitan ng actual server path
-global LocalFolder  := "C:\Users\Username\Desktop\MyFolder" ; Palitan ng desktop folder path
+global ServerFolder := "C:\Path\To\Your\Server\Folder"  
+global LocalFolder  := "C:\Users\Username\Desktop\MyFolder" 
 
 ; ==============================================================================
 ; HOTKEY TRIGGER: Pindutin ang F8 para simulan ang proseso
 ; ==============================================================================
 F8:: {
-    ; Siguraduhing existing ang folders bago magpatuloy
+    
     if !DirExist(ServerFolder) {
         MsgBox("Error: Hindi mahanap ang Server Folder.`nPakicheck ang path: " ServerFolder, "Error", 48)
         return
     }
     if !DirExist(LocalFolder) {
-        ; Kung wala pa yung desktop folder, gagawin ito ng script nang kusa
+        
         DirCreate(LocalFolder)
     }
 
     FileCount := 0
     ErrorCount := 0
 
-    ; I-loop ang lahat ng files sa loob ng Server Folder
+    
     LoopFiles ServerFolder "\*.*" {
         SourceFile := A_LoopFilePath
         DestFile := LocalFolder "\" A_LoopFileName
 
         try {
-            ; 1. Kopyahin ang file papuntang Desktop folder (Overwrite kung may kaparehong pangalan)
+            
             FileCopy(SourceFile, DestFile, 1)
             
-            ; 2. Burahin ang file sa server kapag matagumpay ang pagkaka-copy
+            
             FileDelete(SourceFile)
             
             FileCount++
         } catch as err {
             ErrorCount++
-            ; I-skip ang file kung kasalukuyan pang ginagamit ng system o may error
+            
             continue
         }
     }
 
     ; ==============================================================================
-    ; NOTIFICATION (Magpapakita ng summary pagkatapos ng proseso)
+    ; NOTIFICATION 
     ; ==============================================================================
     if (FileCount > 0) {
         MsgBox(FileCount " (na) file ang matagumpay na nailipat sa Desktop!`nMga nagka-error: " ErrorCount, "Success", 64)
     } else if (ErrorCount > 0) {
         MsgBox("Walang file na nailipat. " ErrorCount " (na) file ang naka-lock o may error.", "Warning", 48)
     } else {
-        ; Tooltip lang para hindi istorbo kung walang nakitang file sa server
+        
         ToolTip("Walang file na nahanap sa server.")
-        SetTimer () => ToolTip(), -2000 ; Mawawala ang tooltip pagkalipas ng 2 segundo
+        SetTimer () => ToolTip(), -2000 
     }
 }
