@@ -293,7 +293,7 @@ LaunchGUI() {
             return
         }
         
-        editKey.Value := Upper(Trim(editKey.Value)) ; Force format uniformity
+        editKey.Value := StrUpper(Trim(editKey.Value)) ; Gumagana na nang tama sa AHK v2!
         rowToUpdate := 0
         Loop LV.GetCount() {
             if (LV.GetText(A_Index, 1) = editKey.Value) {
