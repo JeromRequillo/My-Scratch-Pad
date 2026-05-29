@@ -295,8 +295,11 @@ ShowTab(id) {
     panels := [pnl1, pnl2, pnl3, pnl4]
     for i, p in panels {
         for ctrl in p {
-            if (i == id) ctrl.Visible := true
-            else         ctrl.Visible := false
+            if (i == id) {
+                ctrl.Visible := true
+            } else {
+                ctrl.Visible := false
+            }
         }
     }
 }
