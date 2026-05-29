@@ -171,8 +171,8 @@ LaunchGUI() {
     ; Naglalagay ng subtle sidebar placeholder panel sa kaliwa
     mainGui.Add("Text", "x0 y0 w175 h520 +Background0xF3F3F3") 
     
-    ; Gagamit tayo ng Tab3 control pero naka-hago o "Buttons" style para maging kamukha ng Settings Sidebar
-    tabMenu := mainGui.Add("Tab3", "x5 y15 w165 h420 Left Buttons Center TCS_VERTICAL", ["  Invoice Config", "  Text Hotkeys", "  VAT Calculator", "  About App"])
+    ; Gagamit tayo ng Tab3 control pero gagamitin ang +0x0080 para sa vertical alignment ng maayos sa v2
+    tabMenu := mainGui.Add("Tab3", "x5 y15 w165 h420 Left Buttons Center +0x0080", ["  Invoice Config", "  Text Hotkeys", "  VAT Calculator", "  About App"])
     
     ; --- TAB 1: INVOICE CONFIGURATION ---
     tabMenu.UseTab(1)
@@ -328,7 +328,6 @@ LaunchGUI() {
     ; --- SYSTEM ACTION CONTROL BUTTONS ---
     mainGui.SetFont("Norm s10", "Segoe UI")
     
-    ; Save at Cancel button nilagay sa ilalim ng left sidebar control panel para compact
     btnSave := mainGui.Add("Button", "x15 y440 w145 h32 Default", "Save All Changes")
     btnSave.OnEvent("Click", SaveSettings)
     
