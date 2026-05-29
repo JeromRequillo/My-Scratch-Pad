@@ -1,59 +1,358 @@
+;@Ahk2Exe-SetFileVersion 4.0.0.0
+;@Ahk2Exe-SetProductVersion 4.0.0.0
+;@Ahk2Exe-SetCompanyName Jerom Requillo
+;@Ahk2Exe-SetDescription KeyTap Pro - Workflow Automation Suite
+;@Ahk2Exe-SetCopyright Copyright (C) 2026 Jerom Requillo. All rights reserved.
+
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-; ==============================================================================
-; USER CONFIGURATION 
-; ==============================================================================
-global ServerFolder := "C:\Path\To\Your\Server\Folder"  
-global LocalFolder  := "C:\Users\Username\Desktop\MyFolder" 
+; --- SYSTEM TRAY CONFIGURATION ---
+A_IconTip := "🎯 KeyTap Pro v4.0"
+TrayRecalcMenu()
 
-; ==============================================================================
-; HOTKEY TRIGGER: Pindutin ang F8 para simulan ang proseso
-; ==============================================================================
-F8:: {
+; Global Variables
+global current_num := "0000000"
+global prefix := "AAPI"
+global suffix := "S"
+global mainGui := "" 
+global hotkeyList := [] 
+global activeHotkeys := Map() 
+
+; Basahin ang settings sa simula
+LoadSettings()
+RegisterCustomHotkeys()
+return 
+
+; --- SYSTEM FUNCTIONS ---
+
+TrayRecalcMenu() {
+    Tray := A_TrayMenu
+    Tray.Delete()
+    Tray.Add("Open Dashboard (Alt+F10)", (*) => LaunchGUI())
+    Tray.Add() 
+    Tray.Add("Exit Application", (*) => ExitApp())
+}
+
+LoadSettings() {
+    global current_num, prefix, suffix, hotkeyList
     
-    if !DirExist(ServerFolder) {
-        MsgBox("Error: Hindi mahanap ang Server Folder.`nPakicheck ang path: " ServerFolder, "Error", 48)
-        return
-    }
-    if !DirExist(LocalFolder) {
-        
-        DirCreate(LocalFolder)
-    }
+    current_num := IniRead("settings.ini", "Sequence", "LastNumber", "0000000")
+    prefix := IniRead("settings.ini", "Settings", "Prefix", "AAPI")
+    suffix := IniRead("settings.ini", "Settings", "Suffix", "S")
 
-    FileCount := 0
-    ErrorCount := 0
+    hotkeyList := []
+    try {
+        hkSections := IniRead("settings.ini", "Hotkeys")
+        Loop Parse, hkSections, "`n", "`r" {
+            if (A_LoopField == "")
+                continue
+            
+            pos := InStr(A_LoopField, "=")
+            if (pos > 0) {
+                hkKey := SubStr(A_LoopField, 1, pos - 1)
+                hkTxt := SubStr(A_LoopField, pos + 1)
+                hotkeyList.Push({key: hkKey, txt: hkTxt})
+            }
+        }
+    } catch {
+        hotkeyList := [
+            {key: "!S", txt: "SAMPLE TXT"}
+        ]
+    }
+}
 
+RegisterCustomHotkeys() {
+    global hotkeyList, activeHotkeys
     
-    LoopFiles ServerFolder "\*.*" {
-        SourceFile := A_LoopFilePath
-        DestFile := LocalFolder "\" A_LoopFileName
+    for hkKey, hkFunc in activeHotkeys {
+        try Hotkey(hkKey, "Off")
+    }
+    activeHotkeys := Map() 
 
-        try {
-            
-            FileCopy(SourceFile, DestFile, 1)
-            
-            
-            FileDelete(SourceFile)
-            
-            FileCount++
-        } catch as err {
-            ErrorCount++
-            
-            continue
+    for hk in hotkeyList {
+        if (hk.key != "" && hk.txt != "") {
+            try {
+                boundFunc := CreateHotkeyFunc(hk.txt)
+                Hotkey(hk.key, boundFunc, "On")
+                activeHotkeys[hk.key] := boundFunc 
+            } catch as err {
+                ; Laktawan kung may error sa format
+            }
         }
     }
+}
 
-    ; ==============================================================================
-    ; NOTIFICATION 
-    ; ==============================================================================
-    if (FileCount > 0) {
-        MsgBox(FileCount " (na) file ang matagumpay na nailipat sa Desktop!`nMga nagka-error: " ErrorCount, "Success", 64)
-    } else if (ErrorCount > 0) {
-        MsgBox("Walang file na nailipat. " ErrorCount " (na) file ang naka-lock o may error.", "Warning", 48)
-    } else {
+CreateHotkeyFunc(txt) {
+    return (*) => SendInput(txt)
+}
+
+GenerateInvoice(p := "", n := 0, s := "") {
+    global prefix, current_num, suffix
+    target_prefix := (p == "") ? prefix : p
+    target_num := (n == 0) ? current_num : n
+    target_suffix := (s == "") ? suffix : s
+    
+    formatted_num := Format("{:07}", Number(target_num))
+    return target_prefix . formatted_num . target_suffix
+}
+
+; --- STATIC HARDCODED HOTKEYS ---
+
+; Alt + F9: Fast Invoice Typing
+!F9:: {
+    Critical()
+    invoice_string := GenerateInvoice()
+    SendInput(invoice_string)
+    
+    SoundBeep(750, 50) 
+    ToolTip("Sent: " . invoice_string)
+    SetTimer(() => ToolTip(), -2000) 
+    
+    global current_num
+    if !IsNumber(current_num)
+        current_num := 0
+    current_num := Number(current_num) + 1
+    IniWrite(current_num, "settings.ini", "Sequence", "LastNumber")
+}
+
+; Alt + F10: Launch Custom Dashboard
+!F10:: LaunchGUI()
+
+; Alt + V: Intelligent VAT Calculator (RegEx Enhanced)
+!v:: {
+    A_Clipboard := "" 
+    Send("^c") 
+    if !ClipWait(1) {
+        ToolTip("Walang na-copy!")
+        SetTimer(() => ToolTip(), -2000)
+        return
+    }
+
+    ; Lilinisin ang string gamit ang RegEx para kunin lang ang valid na numero at decimal points
+    CleanAmount := RegExReplace(A_Clipboard, "[^\d\.-]")
+    
+    if (CleanAmount != "" && IsNumber(CleanAmount)) {
+        NetAmount := Number(CleanAmount) / 1.12
+        FormattedNet := Round(NetAmount, 2)
         
-        ToolTip("Walang file na nahanap sa server.")
-        SetTimer () => ToolTip(), -2000 
+        A_Clipboard := FormattedNet
+        Send("^v") 
+        
+        ToolTip("VAT Deducted: " . FormattedNet)
+        SetTimer(() => ToolTip(), -2000)
+    } else {
+        ToolTip("Error: Walang numero sa na-highlight!")
+        SetTimer(() => ToolTip(), -2000)
+    }
+}
+
+; --- MODERN OVERHAULED GUI LAUNCHER ---
+
+LaunchGUI() {
+    global mainGui, current_num, prefix, suffix, hotkeyList
+    
+    LoadSettings() 
+    
+    if (mainGui != "")
+        mainGui.Destroy()
+    
+    ; --- THEME COLOR PALETTE (Cyber Dark Theme) ---
+    bgMain     := "0x121214"  ; Midnight Canvas
+    bgCard     := "0x1C1C24"  ; Container/Card Background
+    bgInput    := "0x2A2A35"  ; Field Input Background
+    accentCyan := "0x00E5FF"  ; Tech Neon Cyan
+    accentText := "0xBB86FC"  ; Neon Purple Accent
+    txtMain    := "0xFFFFFF"  ; Pure Crisp White
+    txtMuted   := "0x9E9E9E"  ; Accessible Muted Gray
+    
+    ; Create Borderless and Theme-less Modern Window
+    mainGui := Gui("-Caption -Theme +Border +AlwaysOnTop", "KeyTap Pro v4.0")
+    mainGui.BackColor := bgMain
+    mainGui.SetFont("s10", "Segoe UI")
+    
+    ; --- 1. TITLE BAR AREA (Drag-to-Move Window) ---
+    titleBar := mainGui.Add("Text", "x0 y0 w640 h45 +Background" . bgCard)
+    titleBar.OnEvent("Click", (*) => PostMessage(0xA1, 2,,, "A")) ; Window dragging API call
+    
+    mainGui.SetFont("s11 Bold c" . accentCyan, "Segoe UI")
+    mainGui.Add("Text", "x20 y12 w200 +BackgroundTrans", "🎯 KEYTAP PRO v4.0")
+    
+    mainGui.SetFont("s9 Norm c" . txtMuted, "Segoe UI")
+    mainGui.Add("Text", "x160 y14 w200 +BackgroundTrans", "|  Workflow Automation Dashboard")
+    
+    ; Modern Close Button [X]
+    mainGui.SetFont("s11 Bold c" . txtMain, "Segoe UI")
+    btnClose := mainGui.Add("Text", "x600 y12 w25 h25 Center +BackgroundTrans", "✕")
+    btnClose.OnEvent("Click", (*) => mainGui.Destroy())
+    
+    ; --- 2. CARD LAYOUT (GRID SYSTEM) ---
+    
+    ; --- [CARD A: INVOICE CONFIG] ---
+    mainGui.SetFont("s10 Bold c" . accentText, "Segoe UI")
+    mainGui.Add("GroupBox", "x20 y65 w290 h215", " Invoice Engine ")
+    
+    mainGui.SetFont("s9 Norm c" . txtMuted, "Segoe UI")
+    mainGui.Add("Text", "x40 y98 w70 h20 +BackgroundTrans", "Prefix:")
+    mainGui.SetFont("s10 Norm c" . txtMain, "Segoe UI")
+    guiCtrl_Prefix := mainGui.Add("Edit", "x120 y95 w165 h25 +Background" . bgInput . " -Border", prefix)
+    guiCtrl_Prefix.OnEvent("Change", UpdatePreview)
+    
+    mainGui.SetFont("s9 Norm c" . txtMuted, "Segoe UI")
+    mainGui.Add("Text", "x40 y138 w70 h20 +BackgroundTrans", "Next No:")
+    mainGui.SetFont("s10 Norm c" . txtMain, "Segoe UI")
+    guiCtrl_Num := mainGui.Add("Edit", "x120 y135 w100 h25 Number +Background" . bgInput . " -Border", current_num)
+    guiCtrl_Num.OnEvent("Change", UpdatePreview)
+    
+    btnReset := mainGui.Add("Button", "x225 y134 w60 h27", "Reset")
+    btnReset.OnEvent("Click", (*) => (guiCtrl_Num.Value := "0", UpdatePreview()))
+    
+    mainGui.SetFont("s9 Norm c" . txtMuted, "Segoe UI")
+    mainGui.Add("Text", "x40 y178 w70 h20 +BackgroundTrans", "Suffix:")
+    mainGui.SetFont("s10 Norm c" . txtMain, "Segoe UI")
+    guiCtrl_Suffix := mainGui.Add("Edit", "x120 y175 w165 h25 +Background" . bgInput . " -Border", suffix)
+    guiCtrl_Suffix.OnEvent("Change", UpdatePreview)
+    
+    ; Live Preview Area inside Card A
+    mainGui.SetFont("s12 Bold c" . accentCyan, "Segoe UI")
+    current_preview := GenerateInvoice()
+    guiCtrl_PreviewText := mainGui.Add("Text", "x30 y225 w270 h30 Center +BackgroundTrans", "Preview: " . current_preview)
+    
+    ; --- [CARD B: QUICK UTILITIES] ---
+    mainGui.SetFont("s10 Bold c" . accentText, "Segoe UI")
+    mainGui.Add("GroupBox", "x330 y65 w290 h215", " Intelligent Tools ")
+    
+    mainGui.SetFont("s10 Bold c" . txtMain, "Segoe UI")
+    mainGui.Add("Text", "x350 y95 w250 h20 +BackgroundTrans", "📊 Automated VAT Deductor")
+    mainGui.SetFont("s9 Norm c" . txtMuted, "Segoe UI")
+    mainGui.Add("Text", "x350 y120 w250 h65 +BackgroundTrans", "I-highlight lang ang presyo at pindutin ang [Alt + V]. Awtomatikong mada-deduct ang 12% VAT kahit may kasamang spacing o currency symbols.")
+    
+    mainGui.SetFont("s10 Bold c" . txtMain, "Segoe UI")
+    mainGui.Add("Text", "x350 y195 w250 h20 +BackgroundTrans", "🚀 Fast Macro Trigger")
+    mainGui.SetFont("s9 Norm c" . txtMuted, "Segoe UI")
+    mainGui.Add("Text", "x350 y220 w250 h45 +BackgroundTrans", "Gamitin ang [Alt + F9] upang mabilisang i-type ang invoice preview string.")
+    
+    ; --- [CARD C: DYNAMIC HOTKEY REGISTRY (FULL WIDTH)] ---
+    mainGui.SetFont("s10 Bold c" . accentText, "Segoe UI")
+    mainGui.Add("GroupBox", "x20 y295 w600 h225", " Custom Text Expansion Hotkeys ")
+    
+    mainGui.SetFont("s9 Norm c" . txtMain, "Segoe UI")
+    LV := mainGui.Add("ListView", "x40 y325 w300 h180 +Grid -Multi +Background" . bgInput . " c" . txtMain . " -Theme", ["Shortcut Key", "Output Text Workflow"])
+    LV.ModifyCol(1, 100)
+    LV.ModifyCol(2, 195)
+    for hk in hotkeyList {
+        LV.Add(, hk.key, hk.txt)
+    }
+    
+    ; Macro Editor inputs inside Card C (Right side)
+    mainGui.SetFont("s9 Norm c" . txtMuted, "Segoe UI")
+    mainGui.Add("Text", "x360 y325 w240 h20 +BackgroundTrans", "Key (e.g. !A = Alt+A, ^B = Ctrl+B):")
+    editKey := mainGui.Add("Edit", "x360 y345 w240 h25 +Background" . bgInput . " c" . txtMain . " -Border")
+    
+    mainGui.Add("Text", "x360 y380 w240 h20 +BackgroundTrans", "Expanded Output Text:")
+    editTxt := mainGui.Add("Edit", "x360 y400 w240 h25 +Background" . bgInput . " c" . txtMain . " -Border")
+    
+    btnAdd := mainGui.Add("Button", "x360 y440 w115 h30", "➕ Add / Update")
+    btnDel := mainGui.Add("Button", "x485 y440 w115 h30", "❌ Delete Line")
+    
+    btnAdd.OnEvent("Click", AddUpdateHotkey)
+    btnDel.OnEvent("Click", DeleteHotkey)
+    LV.OnEvent("Click", SelectHotkey) 
+    
+    mainGui.SetFont("s8 c" . txtMuted . " Italic", "Segoe UI")
+    mainGui.Add("Text", "x360 y480 w240 h35 +BackgroundTrans", "Modifiers: ! (Alt)  |  ^ (Ctrl)  |  + (Shift)")
+    
+    ; --- 3. DASHBOARD BOTTOM ACTIONS ---
+    mainGui.SetFont("s10 Bold c" . txtMain, "Segoe UI")
+    btnSave := mainGui.Add("Button", "x20 y540 w290 h40 +Default", "COMMIT & SAVE CONFIG")
+    btnSave.OnEvent("Click", SaveSettings)
+    
+    btnCancel := mainGui.Add("Button", "x330 y540 w290 h40", "DISMISS DASHBOARD")
+    btnCancel.OnEvent("Click", (*) => mainGui.Destroy())
+    
+    ; Display Window
+    mainGui.Show("w640 h600")
+    
+    ; --- GUI INTERNAL CONTROLLERS ---
+    
+    UpdatePreview(*) {
+        temp_preview := GenerateInvoice(guiCtrl_Prefix.Value, guiCtrl_Num.Value, guiCtrl_Suffix.Value)
+        guiCtrl_PreviewText.Value := "Preview: " . temp_preview
+    }
+
+    SelectHotkey(CtrlObj, RowNumber) {
+        if (RowNumber == 0)
+            return
+        editKey.Value := CtrlObj.GetText(RowNumber, 1)
+        editTxt.Value := CtrlObj.GetText(RowNumber, 2)
+    }
+
+    AddUpdateHotkey(*) {
+        if (editKey.Value == "" || editTxt.Value == "") {
+            MsgBox("Paki-sulat muna ang Shortcut Key at Text!", "System Diagnostic", 48)
+            return
+        }
+        
+        editKey.Value := Upper(Trim(editKey.Value)) ; Force format uniformity
+        rowToUpdate := 0
+        Loop LV.GetCount() {
+            if (LV.GetText(A_Index, 1) = editKey.Value) {
+                rowToUpdate := A_Index
+                break
+            }
+        }
+        
+        if (rowToUpdate > 0) {
+            LV.Modify(rowToUpdate, , editKey.Value, editTxt.Value)
+        } else {
+            LV.Add(, editKey.Value, editTxt.Value)
+        }
+        
+        editKey.Value := ""
+        editTxt.Value := ""
+    }
+
+    DeleteHotkey(*) {
+        selectedRow := LV.GetNext()
+        if (selectedRow == 0) {
+            MsgBox("Pumili muna ng hotkey sa listahan na gustong burahin.", "System Diagnostic", 48)
+            return
+        }
+        LV.Delete(selectedRow)
+        editKey.Value := ""
+        editTxt.Value := ""
+    }
+
+    SaveSettings(*) {
+        global prefix, current_num, suffix, hotkeyList
+
+        if (guiCtrl_Num.Value == "") {
+            MsgBox("'Next Number' field is structural and cannot be empty!", "Execution Error", 48)
+            return
+        }
+        
+        prefix := guiCtrl_Prefix.Value
+        current_num := Format("{:07}", Number(guiCtrl_Num.Value)) 
+        suffix := guiCtrl_Suffix.Value
+        
+        IniWrite(prefix, "settings.ini", "Settings", "Prefix")
+        IniWrite(Number(guiCtrl_Num.Value), "settings.ini", "Sequence", "LastNumber")
+        IniWrite(suffix, "settings.ini", "Settings", "Suffix")
+        
+        try IniDelete("settings.ini", "Hotkeys")
+        
+        hotkeyList := [] 
+        Loop LV.GetCount() {
+            hKey := LV.GetText(A_Index, 1)
+            hTxt := LV.GetText(A_Index, 2)
+            
+            IniWrite(hTxt, "settings.ini", "Hotkeys", hKey)
+            hotkeyList.Push({key: hKey, txt: hTxt})
+        }
+        
+        RegisterCustomHotkeys()
+        
+        MsgBox("All settings committed and environmental paths updated!", "Success", "64 T1.5")
+        mainGui.Destroy()
     }
 }
