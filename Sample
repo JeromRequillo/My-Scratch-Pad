@@ -1,1 +1,55 @@
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+
+; 1. Setup ng Main Window
+MyGui := Gui("+MainForm +Minsize", "Folder Selector Tool")
+MyGui.SetFont("s10", "Segoe UI") ; Gumamit ng modernong Windows font
+
+; 2. Mga UI Elements (Widgets)
+MyGui.Add("Text", "w400", "Hakbang 1: Piliin ang target folder na nais mong i-proseso.")
+
+; Edit box para sa folder path (Read-only para hindi ma-type-an ng mali)
+EditFolderPath := MyGui.Add("Edit", "w310 r1 ReadOnly xp y+10", "Wala pang napipiling folder...")
+
+; Browse Button sa tabi ng Edit box
+BtnBrowse := MyGui.Add("Button", "w80 hp x+10", "Browse...")
+BtnBrowse.OnEvent("Click", SelectFolder)
+
+MyGui.Add("Text", "w400 x20 y+20", "Hakbang 2: I-click ang button sa ibaba para magsimula.")
+
+; Main Action Button (Naka-disable sa simula hangga't walang folder)
+BtnStart := MyGui.Add("Button", "w150 h40 cBlue x135 y+10 Disabled", "SIMULAN")
+BtnStart.OnEvent("Click", ProcessFolder)
+
+; Ipakita ang GUI sa gitna ng screen
+MyGui.Show("w430")
+
+---
+
+; 3. Mga Functions / Logic
+
+; Function kapag kinlik ang "Browse..."
+SelectFolder(*) {
+    ; Bubuksan ang standard Windows Folder Dialogue
+    SelectedDir := DirSelect(, 3, "Pumili ng Target Folder")
+    
+    if (SelectedDir != "") {
+        EditFolderPath.Value := SelectedDir ; Ipasok ang path sa Edit box
+        BtnStart.Enabled := true            ; I-activate ang Start button
+    }
+}
+
+; Function kapag kinlik ang "SIMULAN"
+ProcessFolder(*) {
+    TargetFolder := EditFolderPath.Value
+    
+    ; Dito mo ilalagay ang main logic o code ng app mo
+    MsgBox("Ipinoproseso na ang folder:`n" TargetFolder, "Success", "64")
+    
+    ; Halimbawa ng aktwal na gagawin sa folder:
+    ; Loop Files, TargetFolder "\*.*", "R" { ... }
+}
+
+; Isara ang script kapag kline-close ang GUI
+MyGui.OnEvent("Close", (*) => ExitApp())
 
