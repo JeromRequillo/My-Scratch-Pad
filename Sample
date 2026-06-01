@@ -316,12 +316,14 @@ LaunchGUI() {
             keyPart := SubStr(fullKey, 2)
         }
         
-        ; Itakda ang angkop na Modifier Dropdown row index
-        if (modPart == "!") ddlMod.Choose(1)
-        else if (modPart == "^") ddlMod.Choose(2)
-        else if (modPart == "+") ddlMod.Choose(3)
-        else if (modPart == "#") ddlMod.Choose(4)
-        else ddlMod.Choose(5)
+        ; Mas ligtas at malinis na Switch block para sa AHK v2
+        switch modPart {
+            case "!": ddlMod.Choose(1) ; Alt
+            case "^": ddlMod.Choose(2) ; Ctrl
+            case "+": ddlMod.Choose(3) ; Shift
+            case "#": ddlMod.Choose(4) ; Win
+            default:  ddlMod.Choose(5) ; None
+        }
         
         ; Hanapin at piliin ang katumbas na Key sa Key Dropdown listahan
         Loop keyList.Length {
