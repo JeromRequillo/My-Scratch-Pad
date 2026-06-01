@@ -303,9 +303,9 @@ LaunchGUI() {
     ; --- TAB 4: ABOUT & CREDITS ---
     tabMenu.UseTab(4)
     mainGui.SetFont("bold s11", "Segoe UI")
-    mainGui.Add("Text", "x25 y50 w400 h25 c0x0066CC", "🎯 KeyTap Pro v4.0")
+    mainGui.Add("Text", "x25 y50 w400 h25 c0x0066CC", "🎯 KeyTap Pro v4.1")
     mainGui.SetFont("s9", "Segoe UI")
-    mainGui.Add("Text", "x25 y75 w400 h18", "Version: 4.0.0 (Dynamic ListView)")
+    mainGui.Add("Text", "x25 y75 w400 h18", "Version: 4.1.0 (Dynamic ListView)")
     mainGui.Add("Text", "x25 y95 w400 h18", "Developer: Jerom Requillo")
     
     mainGui.SetFont("italic s9", "Segoe UI")
