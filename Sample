@@ -292,12 +292,14 @@ LaunchGUI() {
     }
 
     ; Helper para isalin ang piniling Dropdown text papuntang AHK Modifier Symbology
-    GetModifierSymbol(modText) {
-        if InStr(modText, "Alt") return "!"
-        if InStr(modText, "Ctrl") return "^"
-        if InStr(modText, "Shift") return "+"
-        if InStr(modText, "Win") return "#"
-        return "" ; None
+   GetModifierSymbol(modText) {
+        switch {
+            case InStr(modText, "Alt"):   return "!"
+            case InStr(modText, "Ctrl"):  return "^"
+            case InStr(modText, "Shift"): return "+"
+            case InStr(modText, "Win"):   return "#"
+            default:                      return ""
+        }
     }
 
     SelectHotkey(CtrlObj, RowNumber) {
