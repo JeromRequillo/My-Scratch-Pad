@@ -1,55 +1,406 @@
+;@Ahk2Exe-SetFileVersion 4.1.0.0
+;@Ahk2Exe-SetProductVersion 4.1.0.0
+;@Ahk2Exe-SetCompanyName Jerom Requillo
+;@Ahk2Exe-SetDescription KeyTap Pro - Workflow Automation Suite
+;@Ahk2Exe-SetCopyright Copyright (C) 2026 Jerom Requillo. All rights reserved.
+
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-; 1. Setup ng Main Window
-MyGui := Gui("+MainForm +Minsize", "Folder Selector Tool")
-MyGui.SetFont("s10", "Segoe UI") ; Gumamit ng modernong Windows font
+; --- SYSTEM TRAY CONFIGURATION ---
+A_IconTip := "🎯 KeyTap pro v4.1"
+TrayRecalcMenu()
 
-; 2. Mga UI Elements (Widgets)
-MyGui.Add("Text", "w400", "Hakbang 1: Piliin ang target folder na nais mong i-proseso.")
+; Global Variables
+global current_num := "0000000"
+global prefix := "AAPI"
+global suffix := "S"
+global mainGui := "" 
+global hotkeyList := [] 
+global activeHotkeys := Map() 
 
-; Edit box para sa folder path (Read-only para hindi ma-type-an ng mali)
-EditFolderPath := MyGui.Add("Edit", "w310 r1 ReadOnly xp y+10", "Wala pang napipiling folder...")
+; Basahin ang settings sa simula
+LoadSettings()
+RegisterCustomHotkeys()
+return 
 
-; Browse Button sa tabi ng Edit box
-BtnBrowse := MyGui.Add("Button", "w80 hp x+10", "Browse...")
-BtnBrowse.OnEvent("Click", SelectFolder)
+; --- FUNCTIONS ---
 
-MyGui.Add("Text", "w400 x20 y+20", "Hakbang 2: I-click ang button sa ibaba para magsimula.")
+TrayRecalcMenu() {
+    Tray := A_TrayMenu
+    Tray.Delete()
+    Tray.Add("Open Manager (Alt+F10)", (*) => LaunchGUI())
+    Tray.Add("Open Settings Directory", (*) => Run(A_ScriptDir)) ; QoL: Buksan ang folder
+    Tray.Add() 
+    Tray.Add("Exit Application", (*) => ExitApp())
+}
 
-; Main Action Button (Naka-disable sa simula hangga't walang folder)
-BtnStart := MyGui.Add("Button", "w150 h40 cBlue x135 y+10 Disabled", "SIMULAN")
-BtnStart.OnEvent("Click", ProcessFolder)
-
-; Ipakita ang GUI sa gitna ng screen
-MyGui.Show("w430")
-
----
-
-; 3. Mga Functions / Logic
-
-; Function kapag kinlik ang "Browse..."
-SelectFolder(*) {
-    ; Bubuksan ang standard Windows Folder Dialogue
-    SelectedDir := DirSelect(, 3, "Pumili ng Target Folder")
+LoadSettings() {
+    global current_num, prefix, suffix, hotkeyList
     
-    if (SelectedDir != "") {
-        EditFolderPath.Value := SelectedDir ; Ipasok ang path sa Edit box
-        BtnStart.Enabled := true            ; I-activate ang Start button
+    current_num := IniRead("settings.ini", "Sequence", "LastNumber", "0000000")
+    prefix := IniRead("settings.ini", "Settings", "Prefix", "AAPI")
+    suffix := IniRead("settings.ini", "Settings", "Suffix", "S")
+
+    hotkeyList := []
+    try {
+        hkSections := IniRead("settings.ini", "Hotkeys")
+        Loop Parse, hkSections, "`n", "`r" {
+            if (A_LoopField == "")
+                continue
+            
+            pos := InStr(A_LoopField, "=")
+            if (pos > 0) {
+                hkKey := SubStr(A_LoopField, 1, pos - 1)
+                hkTxt := SubStr(A_LoopField, pos + 1)
+                hotkeyList.Push({key: hkKey, txt: hkTxt})
+            }
+        }
+    } catch {
+        hotkeyList := [
+            {key: "!S", txt: "SAMPLE TXT"}
+        ]
     }
 }
 
-; Function kapag kinlik ang "SIMULAN"
-ProcessFolder(*) {
-    TargetFolder := EditFolderPath.Value
+RegisterCustomHotkeys() {
+    global hotkeyList, activeHotkeys
     
-    ; Dito mo ilalagay ang main logic o code ng app mo
-    MsgBox("Ipinoproseso na ang folder:`n" TargetFolder, "Success", "64")
-    
-    ; Halimbawa ng aktwal na gagawin sa folder:
-    ; Loop Files, TargetFolder "\*.*", "R" { ... }
+    for hkKey, hkFunc in activeHotkeys {
+        try Hotkey(hkKey, "Off")
+    }
+    activeHotkeys := Map() 
+
+    for hk in hotkeyList {
+        if (hk.key != "" && hk.txt != "") {
+            try {
+                boundFunc := CreateHotkeyFunc(hk.txt)
+                Hotkey(hk.key, boundFunc, "On")
+                activeHotkeys[hk.key] := boundFunc 
+            } catch as err {
+                ; Laktawan kung may error sa registration
+            }
+        }
+    }
 }
 
-; Isara ang script kapag kline-close ang GUI
-MyGui.OnEvent("Close", (*) => ExitApp())
+CreateHotkeyFunc(txt) {
+    return (*) => SendInput(txt)
+}
 
+GenerateInvoice(p := "", n := 0, s := "") {
+    global prefix, current_num, suffix
+    target_prefix := (p == "") ? prefix : p
+    target_num := (n == 0) ? current_num : n
+    target_suffix := (s == "") ? suffix : s
+    
+    formatted_num := Format("{:07}", target_num) ; Naka-standardize sa 7 digits
+    return target_prefix . formatted_num . target_suffix
+}
+
+; --- STATIC HARDCODED HOTKEYS ---
+
+; Alt + F9: Mabilisang pag-type ng invoice string
+!F9:: {
+    Critical()
+    invoice_string := GenerateInvoice()
+    SendInput(invoice_string)
+    
+    SoundBeep(750, 50) 
+    ToolTip("Sent: " . invoice_string)
+    SetTimer(() => ToolTip(), -2000) 
+    
+    global current_num
+    current_num := Number(current_num) + 1
+    IniWrite(current_num, "settings.ini", "Sequence", "LastNumber")
+}
+
+; Alt + F10: Bubuksan ang interface
+!F10:: LaunchGUI()
+
+; Alt + V: VAT Calculator (May Kasamang Clipboard Guard)
+!v:: {
+    OldClip := ClipboardAll() ; QoL: Backup ang orihinal na clipboard
+    A_Clipboard := "" 
+    Send("^c") 
+    if !ClipWait(1) {
+        ToolTip("Walang na-copy!")
+        SetTimer(() => ToolTip(), -2000)
+        A_Clipboard := OldClip
+        return
+    }
+
+    CleanAmount := StrReplace(A_Clipboard, ",", "")
+    
+    if IsNumber(CleanAmount) {
+        NetAmount := Number(CleanAmount) / 1.12
+        FormattedNet := Round(NetAmount, 2)
+        
+        A_Clipboard := FormattedNet
+        Send("^v") 
+        
+        ToolTip("VAT Deducted: " . FormattedNet)
+        SetTimer(() => ToolTip(), -2000)
+    } else {
+        ToolTip("Error: Hindi ito numero!")
+        SetTimer(() => ToolTip(), -2000)
+        A_Clipboard := OldClip ; QoL: Ibalik ang clipboard kapag nag-error
+    }
+}
+
+
+; --- MAIN GUI LAUNCHER ---
+
+LaunchGUI() {
+    global mainGui, current_num, prefix, suffix, hotkeyList
+    
+    LoadSettings() 
+    
+    if (mainGui != "")
+        mainGui.Destroy()
+    
+    mainGui := Gui("-MaximizeBox", "🎯 KeyTap Pro v4.1")
+    mainGui.OnEvent("Close", (*) => mainGui.Destroy()) 
+    mainGui.SetFont("s10", "Segoe UI")
+    
+    tabMenu := mainGui.Add("Tab3", "x10 y10 w480 h400", ["Invoice Config", "Custom Text Hotkeys", "VAT Calculator", "About"])
+    
+    ; --- TAB 1: INVOICE CONFIGURATION ---
+    tabMenu.UseTab(1)
+    
+    mainGui.Add("Text", "x30 y55 w90 h20", "Prefix:")
+    guiCtrl_Prefix := mainGui.Add("Edit", "x130 y52 w170 h25", prefix)
+    guiCtrl_Prefix.OnEvent("Change", UpdatePreview)
+    
+    mainGui.Add("Text", "x30 y90 w90 h20", "Next Number:")
+    guiCtrl_Num := mainGui.Add("Edit", "x130 y87 w110 h25 Number", current_num)
+    guiCtrl_Num.OnEvent("Change", UpdatePreview)
+    
+    btnReset := mainGui.Add("Button", "x245 y86 w55 h26", "Reset")
+    btnReset.OnEvent("Click", (*) => (guiCtrl_Num.Value := "0", UpdatePreview()))
+    
+    mainGui.Add("Text", "x30 y125 w90 h20", "Suffix:")
+    guiCtrl_Suffix := mainGui.Add("Edit", "x130 y122 w170 h25", suffix)
+    guiCtrl_Suffix.OnEvent("Change", UpdatePreview)
+    
+    mainGui.SetFont("bold s10", "Segoe UI")
+    current_preview := GenerateInvoice()
+    guiCtrl_PreviewText := mainGui.Add("Text", "x20 y160 w460 h20 Center +BackgroundTrans", "Preview: " . current_preview)
+    
+    mainGui.SetFont("Norm s10 cGray", "Segoe UI")
+    invoiceTxt := "
+    (
+    💡PAANO GAMITIN ANG INVOICE GENERATOR:
+    • Pindutin ang [ Alt + F9 ] kahit saan para awtomatikong i-type ang Invoice!
+    • Auto-Increment: Sa tuwing gagamitin, madadagdagan ng +1 ang Next Number.
+    • Format Length: Gumagamit ng fixed 7-digit padding (e.g., '0000001').
+    )"
+    mainGui.Add("Edit", "x30 y190 w420 h200 +ReadOnly +Wrap +VScroll -WantReturn", invoiceTxt)
+    mainGui.SetFont("Norm s10 cDefault", "Segoe UI")
+    
+    ; --- TAB 2: CUSTOM TEXT HOTKEYS (DROPDOWN UPGRADE) ---
+    tabMenu.UseTab(2)
+    
+    LV := mainGui.Add("ListView", "x20 y50 w440 h140 +Grid -Multi", ["Shortcut Key", "Text / Name to Output"])
+    LV.ModifyCol(1, 110)
+    LV.ModifyCol(2, 305)
+    
+    for hk in hotkeyList {
+        LV.Add(, hk.key, hk.txt)
+    }
+
+    mainGui.SetFont("s9", "Segoe UI")
+    mainGui.Add("Text", "x20 y200 w90 h20", "Modifier:")
+    mainGui.Add("Text", "x120 y200 w60 h20", "Key:")
+    mainGui.Add("Text", "x190 y200 w200 h20", "Text to Output:")
+    
+    ; Dropdown para sa Modifiers
+    ddlMod := mainGui.Add("DropDownList", "x20 y220 w90 Choose1", ["Alt (!)", "Ctrl (^)", "Shift (+)", "Win (#)", "None"])
+    
+    ; Dropdown para sa mga Karaniwang Keys (A-Z, F1-F12, Numbers)
+    keyList := ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"
+              ,"F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12"
+              ,"0","1","2","3","4","5","6","7","8","9","Space","Enter","Tab"]
+    ddlKey := mainGui.Add("DropDownList", "x120 y220 w60 Choose1", keyList)
+    
+    editTxt := mainGui.Add("Edit", "x190 y220 w270 h25")
+    
+    btnAdd := mainGui.Add("Button", "x20 y255 w100 h28", "➕ Add / Update")
+    btnDel := mainGui.Add("Button", "x130 y255 w100 h28", "❌ Delete Line")
+    
+    btnAdd.OnEvent("Click", AddUpdateHotkey)
+    btnDel.OnEvent("Click", DeleteHotkey)
+    LV.OnEvent("Click", SelectHotkey) 
+
+    mainGui.SetFont("s8 cGray Italic", "Segoe UI")
+    mainGui.Add("Text", "x20 y295 w440 h35", "💡 Tip: Pumili lang sa Dropdown ng Modifier at Key, ilagay ang text, sabay i-click ang Add/Update.")
+    mainGui.SetFont("s10 Norm", "Segoe UI")
+
+    ; --- TAB 3: VAT CALCULATOR INFO ---
+    tabMenu.UseTab(3)
+    mainGui.SetFont("bold s11", "Segoe UI")
+    mainGui.Add("Text", "x30 y60 w400 h25 c0x0066CC", "Automated VAT Deductor Tool")
+    mainGui.SetFont("s10 Norm", "Segoe UI")
+    
+    vatTxt := "
+    (
+    💡PAANO GAMITIN:
+    1. I-highlight/I-select ang presyo na may VAT (Kahit may kuwit o comma).
+    2. Pindutin ang [ Alt + V ].
+    3. Awtomatikong mada-deduct ang 12% VAT at mapapalitan ang text!
+    )"
+    mainGui.Add("Edit", "x30 y95 w420 h290 +ReadOnly +Wrap +VScroll -WantReturn", vatTxt)
+    
+    ; --- TAB 4: ABOUT & CREDITS ---
+    tabMenu.UseTab(4)
+    mainGui.SetFont("bold s11", "Segoe UI")
+    mainGui.Add("Text", "x25 y50 w400 h25 c0x0066CC", "🎯 KeyTap Pro v4.1")
+    mainGui.SetFont("s9", "Segoe UI")
+    mainGui.Add("Text", "x25 y75 w400 h18", "Version: 4.1.0 (Dropdown UI Upgrade)")
+    mainGui.Add("Text", "x25 y95 w400 h18", "Developer: Jerom Requillo")
+    
+    mainGui.SetFont("italic s9", "Segoe UI")
+    mainGui.Add("Link", "x25 y120 w400 h20", 'GitHub: <a href="https://github.com/JeromRequillo">@JeromRequillo</a>')
+    
+    mainGui.SetFont("s10 Norm", "Segoe UI")
+    aboutTxt := "
+    (
+    Default Global Hotkeys:
+    [Alt + F9] -> Generate & Type Auto-Invoice Number
+    [Alt + F10] -> Open Management Interface Control Panel
+    [Alt + V] -> Deduct 12% VAT from Selected Text
+    )"
+    mainGui.Add("Edit", "x25 y170 w420 h220 +ReadOnly +Wrap +VScroll -WantReturn", aboutTxt)
+    
+    tabMenu.UseTab()
+    
+    ; --- BOTTOM BUTTONS ---
+    mainGui.SetFont("Norm s10", "Segoe UI")
+    btnSave := mainGui.Add("Button", "x130 y425 w110 h32 Default", "Save All Changes")
+    btnSave.OnEvent("Click", SaveSettings)
+    
+    btnCancel := mainGui.Add("Button", "x260 y425 w110 h32", "Close Window")
+    btnCancel.OnEvent("Click", (*) => mainGui.Destroy())
+    
+    mainGui.Show("w500 h470")
+    
+    ; --- GUI INTERNAL FUNCTIONS ---
+    
+    UpdatePreview(*) {
+        temp_preview := GenerateInvoice(guiCtrl_Prefix.Value, guiCtrl_Num.Value, guiCtrl_Suffix.Value)
+        guiCtrl_PreviewText.Value := "Preview: " . temp_preview
+    }
+
+    ; Helper para isalin ang piniling Dropdown text papuntang AHK Modifier Symbology
+    GetModifierSymbol(modText) {
+        if InStr(modText, "Alt") return "!"
+        if InStr(modText, "Ctrl") return "^"
+        if InStr(modText, "Shift") return "+"
+        if InStr(modText, "Win") return "#"
+        return "" ; None
+    }
+
+    SelectHotkey(CtrlObj, RowNumber) {
+        if (RowNumber == 0)
+            return
+        
+        fullKey := CtrlObj.GetText(RowNumber, 1)
+        editTxt.Value := CtrlObj.GetText(RowNumber, 2)
+        
+        ; I-decode ang nakaimbak na key para mag-reflect pabalik sa mga dropdowns
+        modPart := ""
+        keyPart := fullKey
+        
+        if (SubStr(fullKey, 1, 1) = "!" || SubStr(fullKey, 1, 1) = "^" || SubStr(fullKey, 1, 1) = "+" || SubStr(fullKey, 1, 1) = "#") {
+            modPart := SubStr(fullKey, 1, 1)
+            keyPart := SubStr(fullKey, 2)
+        }
+        
+        ; Itakda ang angkop na Modifier Dropdown row index
+        if (modPart == "!") ddlMod.Choose(1)
+        else if (modPart == "^") ddlMod.Choose(2)
+        else if (modPart == "+") ddlMod.Choose(3)
+        else if (modPart == "#") ddlMod.Choose(4)
+        else ddlMod.Choose(5)
+        
+        ; Hanapin at piliin ang katumbas na Key sa Key Dropdown listahan
+        Loop keyList.Length {
+            if (keyList[A_Index] = keyPart) {
+                ddlKey.Choose(A_Index)
+                break
+            }
+        }
+    }
+
+    AddUpdateHotkey(*) {
+        if (editTxt.Value == "") {
+            MsgBox("Paki-sulat muna ang Text to Output!", "Babala", 48)
+            return
+        }
+        
+        ; Buuin ang hotkey combination string mula sa dalawang Dropdowns
+        chosenModSymbol := GetModifierSymbol(ddlMod.Text)
+        constructedKey := chosenModSymbol . ddlKey.Text
+        
+        rowToUpdate := 0
+        Loop LV.GetCount() {
+            if (LV.GetText(A_Index, 1) = constructedKey) {
+                rowToUpdate := A_Index
+                break
+            }
+        }
+        
+        if (rowToUpdate > 0) {
+            LV.Modify(rowToUpdate, , constructedKey, editTxt.Value)
+        } else {
+            LV.Add(, constructedKey, editTxt.Value)
+        }
+        
+        editTxt.Value := ""
+        ddlMod.Choose(1)
+        ddlKey.Choose(1)
+    }
+
+    DeleteHotkey(*) {
+        selectedRow := LV.GetNext()
+        if (selectedRow == 0) {
+            MsgBox("Pumili muna ng hotkey sa listahan na gustong burahin.", "Babala", 48)
+            return
+        }
+        LV.Delete(selectedRow)
+        editTxt.Value := ""
+    }
+
+    SaveSettings(*) {
+        global prefix, current_num, suffix, hotkeyList
+
+        if (guiCtrl_Num.Value == "") {
+            MsgBox("'Next Number' cannot be empty!", "Error", 48)
+            return
+        }
+        
+        prefix := guiCtrl_Prefix.Value
+        current_num := Format("{:07}", Number(guiCtrl_Num.Value)) ; Naka-sync na sa 7-digit padding standard
+        suffix := guiCtrl_Suffix.Value
+        
+        IniWrite(prefix, "settings.ini", "Settings", "Prefix")
+        IniWrite(Number(guiCtrl_Num.Value), "settings.ini", "Sequence", "LastNumber")
+        IniWrite(suffix, "settings.ini", "Settings", "Suffix")
+        
+        try IniDelete("settings.ini", "Hotkeys")
+        
+        hotkeyList := [] 
+        Loop LV.GetCount() {
+            hKey := LV.GetText(A_Index, 1)
+            hTxt := LV.GetText(A_Index, 2)
+            
+            IniWrite(hTxt, "settings.ini", "Hotkeys", hKey)
+            hotkeyList.Push({key: hKey, txt: hTxt})
+        }
+        
+        RegisterCustomHotkeys()
+        
+        MsgBox("All settings and dynamic hotkeys updated successfully!", "Success", "64 T1.5")
+        mainGui.Destroy()
+    }
+}
