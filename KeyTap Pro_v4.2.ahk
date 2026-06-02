@@ -391,12 +391,12 @@ LaunchGUI() {
     mainGui.SetFont("bold s11", "Segoe UI")
     mainGui.Add("Text", "x25 y50 w400 h25 c0x0066CC", "🎯 KeyTap Pro v4.2")
     mainGui.SetFont("s9", "Segoe UI")
-    mainGui.Add("Text", "x25 y75 w400 h18", "Version: 4.0.0 (Dynamic ListView)")
+    mainGui.Add("Text", "x25 y75 w400 h18", "Version: 4.2.0 (Dynamic ListView)")
     mainGui.Add("Text", "x25 y95 w400 h18", "Developer: Jerom Requillo")
 
     mainGui.SetFont("italic s9", "Segoe UI")
     mainGui.Add("Link", "x25 y120 w400 h20", 'GitHub: <a href="https://github.com/JeromRequillo">@JeromRequillo</a>')
-    mainGui.Add("Link", "x25 y140 w400 h20", 'Repository: <a href="https://github.com/JeromRequillo/KeyTap-Pro">JeromRequillo/🎯 KeyTap Pro v4.0</a>')
+    mainGui.Add("Link", "x25 y140 w400 h20", 'Repository: <a href="https://github.com/JeromRequillo/KeyTap-Pro">JeromRequillo/🎯 KeyTap Pro v4.2</a>')
 
     mainGui.SetFont("s10 Norm", "Segoe UI")
 
