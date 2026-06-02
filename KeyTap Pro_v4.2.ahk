@@ -246,7 +246,6 @@ LaunchGUI() {
     guiCtrl_DigitLen := mainGui.Add("Edit", "x115 y169 w40 h25 Number", digit_length)
     guiCtrl_DigitLen.OnEvent("Change", UpdatePreview)
     mainGui.SetFont("s8 cGray", "Segoe UI")
-    mainGui.Add("Text", "x160 y173 w200 h18", "(default: 7, min: 1)")
     mainGui.SetFont("s10 Norm", "Segoe UI")
 
     ; --- Preview ---
