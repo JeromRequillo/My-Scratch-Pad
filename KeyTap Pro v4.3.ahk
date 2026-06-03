@@ -426,11 +426,11 @@ LaunchGUI() {
 
     💡 MAHALAGANG PAALALA:
 
-    • Ang Invoice Hotkey ay GLOBAL — same para sa lahat ng profiles.
+    • Multiple Profiles: Bawat profile ay may sariling Prefix, Suffix, Digit Length, at sequence number. Ang pagpapalit ng profile ay agad na gagamitin ito sa Alt+F9.
 
-    • Digit Length: e.g. 5 digits — '1' ay magiging '00001'.
+    • Digit Length: Kontrolin kung ilang digit ang numero (e.g., 5 digits: '1' = '00001'). Default ay 7.
 
-    • Auto-Increment: +1 ang numero bawat hotkey press, nase-save agad.
+    • Auto-Increment: Sa bawat Alt+F9, awtomatikong +1 ang numero at nase-save sa kasalukuyang profile.
 
     • Reset Button: Ibabalik sa 0 ang sequence number ng kasalukuyang profile.
     )"
@@ -610,23 +610,25 @@ LaunchGUI() {
     (
     💡PAANO GAMITIN:
 
-    1. Piliin ang VAT Rate — preset o mag-type ng custom (e.g. 8.5).
+    1. Piliin ang VAT Rate — preset o mag-type ng custom. 
 
-    2. Piliin ang VAT Hotkey na gusto mo (Modifier + Key).
+    2. Piliin ang VAT Hotkey na gusto mo.
 
     3. I-click ang [ Save All Changes ] para mai-save.
 
-    4. I-highlight ang presyo na may VAT (numero at kuwit lang, walang ₱ o PHP).
+    4. I-highlight ang presyo na may VAT.
 
-    5. Pindutin ang iyong napiling VAT Hotkey — awtomatikong mada-deduct!
+    5. Pindutin ang iyong napiling VAT Hotkey.
 
-    💡 MAHAHALAGANG PAALALA:
+    💡 MAHALAGANG PAALALA SA VAT TOOL:
 
-    • Ang VAT Rate ay per-profile. Ang VAT Hotkey ay GLOBAL (same para sa lahat ng profiles).
+    • Numero at kuwit lang ang i-highlight: Huwag isama ang currency symbols tulad ng "₱", "PHP", o "$", pati na rin ang mga letra o spacing (e.g., "₱ 1,500" -> i-highlight lang ang "1,500"). Mag-e-error ang calculator kapag may kasamang letra.
 
-    • Rounding off: Dalawang decimal places (e.g., 133.93).
+    • Rounding off: Awtomatikong sine-set ng tool ang resulta sa dalawang decimal places (e.g., 133.93).
 
-    • Undo: Pindutin ang [ Ctrl + Z ] para bumalik sa dati.
+    • Paano mag-Undo: Kung nagkamali ka ng na-highlight o hindi mo sinasadyang mapalitan ang text, pindutin lang ang [ Ctrl + Z ] sa iyong keyboard para bumalik sa dati ang text.
+
+    • Clipboard backup: Ang huling net amount na kinalkula ay mananatiling naka-copy sa iyong clipboard (ready to paste).
     )"
     mainGui.Add("Edit", "x20 y180 w450 h205 +ReadOnly +Wrap +VScroll -WantReturn", vatTxt)
 
@@ -652,24 +654,24 @@ LaunchGUI() {
     [VAT Hotkey]     -> Deduct VAT from Selected Text
     [Alt + F10]      -> Open Manager (fixed, not configurable)
 
-    What's New in v4.4:
-    • Invoice Hotkey — piliin sa Tab 1 (hindi na hardcoded Alt+F9).
-    • VAT Hotkey — piliin sa Tab 3 (hindi na hardcoded Alt+V).
-    • Conflict detection — bawal mag-conflict ang system hotkeys
-      sa Custom Text Hotkeys (Tab 2) at sa isa't isa.
-    • Hotkeys nire-register agad pagkatapos ng Save.
+    🛠️ Troubleshooting & Diagnostic Guide:
 
-    What's New in v4.3:
-    • Per-profile VAT Rate.
-    • Preset selector + free-type custom rate.
+    1. Hotkeys Are Unresponsive
 
-    🛠️ Troubleshooting:
+       - Verify that the application is running by checking for the 'H' icon in the Windows System Tray (lower-right corner of the taskbar).
+       - If the application is active but non-responsive, right-click the system tray icon and select 'Reload Script'.
 
-    1. Hotkeys unresponsive — check system tray, right-click → Reload.
-    2. Settings not saving — check if settings.ini is Read-Only.
-    3. Crashes — check for duplicate or malformed hotkey strings.
+    2. Configuration Settings Fail to Save
 
-    📂 Fully portable — no registry. Run from USB or Startup folder.
+       - Ensure that the 'settings.ini' configuration file exists within the directory and is not marked as 'Read-Only'.
+
+    3. Application Crashes or Throws Fatal Errors
+
+       - Review your custom macro entries. Ensure that the shortcut key string is properly formatted and that no duplicate hotkeys are assigned to conflicting actions.
+
+    📂 Deployment Information:
+
+    This application is fully portable and operates independently of the Windows Registry. It can be executed from a shared network drive or a USB storage device, or placed in the Windows Startup directory for automatic initialization. All application states are recorded locally in 'settings.ini'.
     )"
     mainGui.Add("Edit", "x25 y170 w420 h220 +ReadOnly +Wrap +VScroll -WantReturn", aboutTxt)
 
