@@ -995,9 +995,8 @@ LaunchGUI() {
         RegisterSystemHotkeys()
         RegisterCustomHotkeys()
 
-        MsgBox("Nai-save na lahat!`n`nInvoice Key: " . sysHK_Invoice
-            . "`nVAT Key: " . sysHK_Vat
-            . "`nVAT Rate (" . active_profile . "): " . vat_rate . "%",
+        MsgBox("Your All Set!`n`nInvoice Key: " . sysHK_Invoice
+
             "Success", "64 T2.5")
         mainGui.Destroy()
     }
