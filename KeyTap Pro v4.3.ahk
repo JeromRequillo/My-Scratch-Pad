@@ -426,11 +426,11 @@ LaunchGUI() {
 
     💡 MAHALAGANG PAALALA:
 
-    • Ang Invoice Hotkey ay GLOBAL — same para sa lahat ng profiles.
+    • Multiple Profiles: Bawat profile ay may sariling Prefix, Suffix, Digit Length, at sequence number. Ang pagpapalit ng profile ay agad na gagamitin ito sa Alt+F9.
 
-    • Digit Length: e.g. 5 digits — '1' ay magiging '00001'.
+    • Digit Length: Kontrolin kung ilang digit ang numero (e.g., 5 digits: '1' = '00001'). Default ay 7.
 
-    • Auto-Increment: +1 ang numero bawat hotkey press, nase-save agad.
+    • Auto-Increment: Sa bawat Alt+F9, awtomatikong +1 ang numero at nase-save sa kasalukuyang profile.
 
     • Reset Button: Ibabalik sa 0 ang sequence number ng kasalukuyang profile.
     )"
@@ -620,13 +620,15 @@ LaunchGUI() {
 
     5. Pindutin ang iyong napiling VAT Hotkey — awtomatikong mada-deduct!
 
-    💡 MAHAHALAGANG PAALALA:
+    💡 MAHALAGANG PAALALA :
 
-    • Ang VAT Rate ay per-profile. Ang VAT Hotkey ay GLOBAL (same para sa lahat ng profiles).
+    • Numero at kuwit lang ang i-highlight: Huwag isama ang currency symbols tulad ng "₱", "PHP", o "$", pati na rin ang mga letra o spacing (e.g., "₱ 1,500" -> i-highlight lang ang "1,500"). Mag-e-error ang calculator kapag may kasamang letra.
 
-    • Rounding off: Dalawang decimal places (e.g., 133.93).
+    • Rounding off: Awtomatikong sine-set ng tool ang resulta sa dalawang decimal places (e.g., 133.93).
 
-    • Undo: Pindutin ang [ Ctrl + Z ] para bumalik sa dati.
+    • Paano mag-Undo: Kung nagkamali ka ng na-highlight o hindi mo sinasadyang mapalitan ang text, pindutin lang ang [ Ctrl + Z ] sa iyong keyboard para bumalik sa dati ang text.
+
+    • Clipboard backup: Ang huling net amount na kinalkula ay mananatiling naka-copy sa iyong clipboard (ready to paste).
     )"
     mainGui.Add("Edit", "x20 y180 w450 h205 +ReadOnly +Wrap +VScroll -WantReturn", vatTxt)
 
@@ -663,13 +665,25 @@ LaunchGUI() {
     • Per-profile VAT Rate.
     • Preset selector + free-type custom rate.
 
-    🛠️ Troubleshooting:
+    🛠️ Troubleshooting & Diagnostic Guide:
 
-    1. Hotkeys unresponsive — check system tray, right-click → Reload.
-    2. Settings not saving — check if settings.ini is Read-Only.
-    3. Crashes — check for duplicate or malformed hotkey strings.
+    1. Hotkeys Are Unresponsive
 
-    📂 Fully portable — no registry. Run from USB or Startup folder.
+       - Verify that the application is running by checking for the 'H' icon in the Windows System Tray (lower-right corner of the taskbar).
+       - If the application is active but non-responsive, right-click the system tray icon and select 'Reload Script'.
+
+    2. Configuration Settings Fail to Save
+
+       - Ensure that the 'settings.ini' configuration file exists within the directory and is not marked as 'Read-Only'.
+
+    3. Application Crashes or Throws Fatal Errors
+
+       - Review your custom macro entries. Ensure that the shortcut key string is properly formatted and that no duplicate hotkeys are assigned to conflicting actions.
+
+    📂 Deployment Information:
+
+    This application is fully portable and operates independently of the Windows Registry. It can be executed from a shared network drive or a USB storage device, or placed in the Windows Startup directory for automatic initialization. All application states are recorded locally in 'settings.ini'.
+    )"
     )"
     mainGui.Add("Edit", "x25 y170 w420 h220 +ReadOnly +Wrap +VScroll -WantReturn", aboutTxt)
 
