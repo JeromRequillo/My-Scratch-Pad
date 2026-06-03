@@ -1,5 +1,5 @@
-;@Ahk2Exe-SetFileVersion 4.4.0.0
-;@Ahk2Exe-SetProductVersion 4.4.0.0
+;@Ahk2Exe-SetFileVersion 4.3.0.0
+;@Ahk2Exe-SetProductVersion 4.3.0.0
 ;@Ahk2Exe-SetCompanyName Jerom Requillo
 ;@Ahk2Exe-SetDescription KeyTap Pro - Workflow Automation Suite
 ;@Ahk2Exe-SetCopyright Copyright (C) 2026 Jerom Requillo. All rights reserved.
@@ -8,7 +8,7 @@
 #SingleInstance Force
 
 ; --- SYSTEM TRAY CONFIGURATION ---
-A_IconTip := "🎯 KeyTap Pro v4.4"
+A_IconTip := "🎯 KeyTap Pro v4.3"
 TrayRecalcMenu()
 
 ; =========================================================
@@ -283,7 +283,7 @@ LaunchGUI() {
     if (mainGui != "")
         mainGui.Destroy()
 
-    mainGui := Gui("-MaximizeBox", "🎯 KeyTap Pro v4.4")
+    mainGui := Gui("-MaximizeBox", "🎯 KeyTap Pro v4.3")
     mainGui.OnEvent("Close", (*) => mainGui.Destroy())
     mainGui.SetFont("s10", "Segoe UI")
 
@@ -637,14 +637,14 @@ LaunchGUI() {
     ; =========================================================
     tabMenu.UseTab(4)
     mainGui.SetFont("bold s11", "Segoe UI")
-    mainGui.Add("Text", "x25 y50 w400 h25 c0x0066CC", "🎯 KeyTap Pro v4.4")
+    mainGui.Add("Text", "x25 y50 w400 h25 c0x0066CC", "🎯 KeyTap Pro v4.3")
     mainGui.SetFont("s9", "Segoe UI")
-    mainGui.Add("Text", "x25 y75 w400 h18", "Version: 4.4.0 (Configurable System Hotkeys)")
+    mainGui.Add("Text", "x25 y75 w400 h18", "Version: 4.3.0 (Configurable System Hotkeys)")
     mainGui.Add("Text", "x25 y95 w400 h18", "Developer: Jerom Requillo")
 
     mainGui.SetFont("italic s9", "Segoe UI")
     mainGui.Add("Link", "x25 y120 w400 h20", 'GitHub: <a href="https://github.com/JeromRequillo">@JeromRequillo</a>')
-    mainGui.Add("Link", "x25 y140 w400 h20", 'Repository: <a href="https://github.com/JeromRequillo/KeyTap-Pro">JeromRequillo/🎯 KeyTap Pro v4.4</a>')
+    mainGui.Add("Link", "x25 y140 w400 h20", 'Repository: <a href="https://github.com/JeromRequillo/KeyTap-Pro">JeromRequillo/🎯 KeyTap Pro v4.3</a>')
 
     mainGui.SetFont("s10 Norm", "Segoe UI")
     aboutTxt := "
