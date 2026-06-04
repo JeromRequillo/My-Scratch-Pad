@@ -19,14 +19,10 @@ global prefix         := "AAPI"
 global suffix         := "S"
 global digit_length   := 7
 global vat_rate       := 12.0
-global vat_mode        := "Deduct"  ; <--- BAGONG DAGDAG (Default Sales Mode)
-global vat_output_type := "Net"     ; <--- BAGONG DAGDAG (Default Output Target)
-global sales_discount  := 0.0       ; <--- BAGONG DAGDAG (Default Discount %)
 global active_profile := "Default"
 global mainGui        := ""
 global hotkeyList     := []
 global activeHotkeys  := Map()
-
 
 ; System hotkey strings (global, loaded from ini)
 global sysHK_Invoice  := "!F9"
@@ -160,8 +156,7 @@ DoInvoiceHotkey() {
 }
 
 DoVatHotkey() {
-    global vat_rate, vat_mode, vat_output_type, sales_discount
-    
+    global vat_rate
     A_Clipboard := ""
     Send("^c")
     if !ClipWait(1) {
@@ -169,55 +164,20 @@ DoVatHotkey() {
         SetTimer(() => ToolTip(), -2000)
         return
     }
-    
     CleanAmount := StrReplace(A_Clipboard, ",", "")
     if IsNumber(CleanAmount) {
-        InputAmt := Number(CleanAmount)
-        
-        ; 1. Ilapat ang Discount kung mayroon
-        if (sales_discount > 0) {
-            InputAmt := InputAmt * (1 - (sales_discount / 100))
-        }
-        
-        divisor := 1 + (vat_rate / 100)
-        
-        ; 2. Kalkulahin ang Net, VAT, at Gross base sa Mode
-        if (vat_mode == "Deduct") {
-            GrossAmt := InputAmt
-            NetAmount := GrossAmt / divisor
-            VatAmt    := GrossAmt - NetAmount
-        } else {
-            NetAmount := InputAmt
-            GrossAmt := NetAmount * divisor
-            VatAmt    := GrossAmt - NetAmount
-        }
-        
-        ; Format sa dalawang decimal places
-        FmtNet   := Round(NetAmount, 2)
-        FmtVat   := Round(VatAmt, 2)
-        FmtGross := Round(GrossAmt, 2)
-        
-        ; 3. Tukuyin kung ano ang i-pe-paste base sa pinili sa GUI
-        if (vat_output_type == "Net") {
-            A_Clipboard := FmtNet
-            ToolTipText := "Pasted Net: " . FmtNet
-        } else if (vat_output_type == "VatAmt") {
-            A_Clipboard := FmtVat
-            ToolTipText := "Pasted VAT Amt: " . FmtVat
-        } else {
-            A_Clipboard := "Net: " . FmtNet . "`r`nVAT (" . vat_rate . "%): " . FmtVat . "`r`nTotal Gross: " . FmtGross
-            ToolTipText := "Pasted Full Breakdown!"
-        }
-        
+        divisor      := 1 + (vat_rate / 100)
+        NetAmount    := Number(CleanAmount) / divisor
+        FormattedNet := Round(NetAmount, 2)
+        A_Clipboard  := FormattedNet
         Send("^v")
-        ToolTip(ToolTipText)
+        ToolTip("VAT " . vat_rate . "% Deducted: " . FormattedNet)
         SetTimer(() => ToolTip(), -2000)
     } else {
         ToolTip("Error: Hindi ito numero!")
         SetTimer(() => ToolTip(), -2000)
     }
 }
-
 
 ; =========================================================
 ; CUSTOM TEXT HOTKEYS
@@ -288,13 +248,10 @@ GetProfileList() {
     return profiles
 }
 
-; Build a hotkey string from modifier symbol + key string
 BuildHKString(modSym, keyStr) {
     return modSym . keyStr
 }
 
-; Parse a hotkey string back into modifier label + key string
-; Returns {modLabel, keyStr}
 ParseHKString(hkStr) {
     modOptions := [
         {sym: "^!", label: "Ctrl+Alt (^!)"},
@@ -348,7 +305,6 @@ LaunchGUI() {
     for extraKey in ["1","2","3","4","5","6","7","8","9","0","Space","Tab","Enter","Delete","Home","End","PgUp","PgDn","Up","Down","Left","Right"]
         keyChoices.Push(extraKey)
 
-    ; Helper: set a modifier dropdown to a label
     SetModDD(dd, label) {
         for i, c in modifierChoices {
             if (c == label) {
@@ -359,7 +315,6 @@ LaunchGUI() {
         dd.Value := 1
     }
 
-    ; Helper: set a key dropdown to a key string
     SetKeyDD(dd, keyStr) {
         for i, c in keyChoices {
             if (c == keyStr) {
@@ -371,71 +326,82 @@ LaunchGUI() {
     }
 
     ; =========================================================
-    ; TAB 1: INVOICE CONFIGURATION
+    ; TAB 1: INVOICE CONFIGURATION (SIKSIK & DASHBOARD DESIGN)
     ; =========================================================
     tabMenu.UseTab(1)
 
-    ; --- Profile row ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y50 w55 h20", "Profile:")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
+    ; --- SECTION 1: SYSTEM QUICK STATS / TILES ---
+    mainGui.SetFont("s8 c0x555555", "Segoe UI")
+    mainGui.Add("GroupBox", "x22 y43 w140 h48", "Active Core Profile")
+    mainGui.Add("GroupBox", "x170 y43 w140 h48", "VAT Deductor Rate")
+    mainGui.Add("GroupBox", "x318 y43 w140 h48", "Custom Hotkeys")
+    
+    mainGui.SetFont("bold s10 c0x0066CC", "Segoe UI")
+    guiCtrl_TileProfile := mainGui.Add("Text", "x32 y60 w120 h20 +BackgroundTrans", active_profile)
+    guiCtrl_TileVat     := mainGui.Add("Text", "x180 y60 w120 h20 +BackgroundTrans", Format("{:.2f}%", vat_rate))
+    guiCtrl_TileCount   := mainGui.Add("Text", "x328 y60 w120 h20 +BackgroundTrans", hotkeyList.Length . " Macros Active")
+    mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
+    ; --- SECTION 2: PROFILE MANAGEMENT ---
+    mainGui.Add("Text", "x22 y103 w50 h20", "Profile:")
     profileList := GetProfileList()
-    ddProfile := mainGui.Add("DropDownList", "x78 y48 w160 h200", profileList)
+    ddProfile := mainGui.Add("DropDownList", "x75 y99 w165 h200", profileList)
     for i, p in profileList {
         if (p == active_profile) {
             ddProfile.Value := i
             break
         }
     }
-
-    btnNewProfile := mainGui.Add("Button", "x244 y47 w70 h22", "➕ New")
-    btnDelProfile := mainGui.Add("Button", "x318 y47 w70 h22", "🗑 Delete")
+    btnNewProfile := mainGui.Add("Button", "x247 y98 w100 h24", "➕ Create New")
+    btnDelProfile := mainGui.Add("Button", "x354 y98 w104 h24", "🗑 Delete Active")
+    
+    ddProfile.OnEvent("Change", SwitchProfile)
     btnNewProfile.OnEvent("Click", NewProfile)
     btnDelProfile.OnEvent("Click", DeleteProfile)
-    ddProfile.OnEvent("Change", SwitchProfile)
 
-    mainGui.Add("Text", "x20 y73 w440 h1 +0x10")
+    mainGui.Add("Text", "x22 y128 w436 h1 +0x10") ; Divider
 
-    ; --- Invoice fields ---
-    mainGui.SetFont("s10 Norm", "Segoe UI")
-    mainGui.Add("Text", "x20 y82 w90 h20", "Prefix:")
-    guiCtrl_Prefix := mainGui.Add("Edit", "x115 y79 w160 h25", prefix)
+    ; --- SECTION 3: INVOICE CONFIG FIELDS (Two-column layout) ---
+    ; Column 1
+    mainGui.Add("Text", "x22 y141 w90 h20", "Prefix:")
+    guiCtrl_Prefix := mainGui.Add("Edit", "x115 y138 w110 h24", prefix)
     guiCtrl_Prefix.OnEvent("Change", UpdatePreview)
 
-    mainGui.Add("Text", "x20 y112 w90 h20", "Next Number:")
-    guiCtrl_Num := mainGui.Add("Edit", "x115 y109 w100 h25 Number", current_num)
-    guiCtrl_Num.OnEvent("Change", UpdatePreview)
-
-    btnReset := mainGui.Add("Button", "x220 y108 w55 h26", "Reset")
-    btnReset.OnEvent("Click", (*) => (guiCtrl_Num.Value := "0", UpdatePreview()))
-
-    mainGui.Add("Text", "x20 y142 w90 h20", "Suffix:")
-    guiCtrl_Suffix := mainGui.Add("Edit", "x115 y139 w160 h25", suffix)
+    mainGui.Add("Text", "x22 y172 w90 h20", "Suffix:")
+    guiCtrl_Suffix := mainGui.Add("Edit", "x115 y169 w110 h24", suffix)
     guiCtrl_Suffix.OnEvent("Change", UpdatePreview)
 
-    mainGui.Add("Text", "x20 y172 w90 h20", "Digit Length:")
-    guiCtrl_DigitLen := mainGui.Add("Edit", "x115 y169 w40 h25 Number", digit_length)
+    ; Column 2
+    mainGui.Add("Text", "x245 y141 w85 h20", "Digit Length:")
+    guiCtrl_DigitLen := mainGui.Add("Edit", "x335 y138 w123 h24 Number", digit_length)
     guiCtrl_DigitLen.OnEvent("Change", UpdatePreview)
 
-    ; --- Invoice Hotkey row ---
-    mainGui.Add("Text", "x20 y202 w440 h1 +0x10")
+    mainGui.Add("Text", "x245 y172 w85 h20", "Next Number:")
+    guiCtrl_Num := mainGui.Add("Edit", "x335 y169 w123 h24 Number", current_num)
+    guiCtrl_Num.OnEvent("Change", UpdatePreview)
 
+    ; Compact Actions Row
+    btnReset := mainGui.Add("Button", "x335 y197 w60 h20", "Reset (0)")
+    btnPlus1 := mainGui.Add("Button", "x398 y197 w60 h20", "+1 Manual")
+    btnReset.OnEvent("Click", (*) => (guiCtrl_Num.Value := "0", UpdatePreview()))
+    btnPlus1.OnEvent("Click", (*) => (guiCtrl_Num.Value := IsNumber(guiCtrl_Num.Value) ? String(Number(guiCtrl_Num.Value) + 1) : "1", UpdatePreview()))
+
+    mainGui.Add("Text", "x22 y224 w436 h1 +0x10") ; Divider
+
+    ; --- SECTION 4: HOTKEY BINDING ---
     mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y210 w90 h20", "Invoice Key:")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
+    mainGui.Add("Text", "x22 y237 w90 h20", "Invoice Hotkey:")
+    mainGui.SetFont("s10 Norm", "Segoe UI")
 
-    ddInvMod := mainGui.Add("DropDownList", "x115 y208 w100 h200", modifierChoices)
-    ddInvKey := mainGui.Add("DropDownList", "x220 y208 w70 h300", keyChoices)
+    ddInvMod := mainGui.Add("DropDownList", "x115 y233 w120 h200", modifierChoices)
+    ddInvKey := mainGui.Add("DropDownList", "x242 y233 w70 h300", keyChoices)
 
-    ; Parse current sysHK_Invoice and set dropdowns
     parsedInv := ParseHKString(sysHK_Invoice)
     SetModDD(ddInvMod, parsedInv.modLabel)
     SetKeyDD(ddInvKey, parsedInv.keyStr)
 
-    ; Live label showing current combined key
-    guiCtrl_InvHKLabel := mainGui.Add("Text", "x296 y211 w160 h18 cGray",
-        "Current: " . sysHK_Invoice)
+    guiCtrl_InvHKLabel := mainGui.Add("Text", "x320 y236 w140 h18 cGray", "Current: " . sysHK_Invoice)
+    
     UpdateInvHKLabel() {
         sym := modSymMap[ddInvMod.Text]
         guiCtrl_InvHKLabel.Value := "Current: " . sym . ddInvKey.Text
@@ -443,39 +409,19 @@ LaunchGUI() {
     ddInvMod.OnEvent("Change", (*) => UpdateInvHKLabel())
     ddInvKey.OnEvent("Change", (*) => UpdateInvHKLabel())
 
-    ; --- Invoice preview ---
-    mainGui.SetFont("bold s10", "Segoe UI")
+    mainGui.Add("Text", "x22 y267 w436 h1 +0x10") ; Divider
+
+    ; --- SECTION 5: REAL-TIME OUTPUT PREVIEW ---
+    mainGui.SetFont("s8 c0x777777", "Segoe UI")
+    mainGui.Add("Text", "x22 y276 w200 h15", "LIVE OUTPUT PREVIEW:")
+    
+    mainGui.SetFont("bold s12 c0x008000", "Segoe UI")
     current_preview := GenerateInvoice()
-    guiCtrl_PreviewText := mainGui.Add("Text", "x20 y237 w450 h20 Center +BackgroundTrans",
-        "Preview: " . current_preview)
-
-    mainGui.SetFont("Norm s9 cGray", "Segoe UI")
-    invoiceTxt := "
-    (
-    💡PAANO GAMITIN ANG INVOICE GENERATOR:
-
-    1. Pumili ng Profile o gumawa ng bago gamit ang [➕ New].
-
-    2. Itakda ang Prefix, Next Number, Suffix, at Digit Length.
-
-    3. Piliin ang Invoice Hotkey (Modifier + Key) na gusto mo.
-
-    4. I-click ang [ Save All Changes ] para mai-save.
-
-    5. Pindutin ang iyong napiling hotkey kahit saan para awtomatikong i-type ang Invoice!
-
-    💡 MAHALAGANG PAALALA:
-
-    • Multiple Profiles: Bawat profile ay may sariling Prefix, Suffix, Digit Length, at sequence number. Ang pagpapalit ng profile ay agad na gagamitin ito sa Alt+F9.
-
-    • Digit Length: Kontrolin kung ilang digit ang numero (e.g., 5 digits: '1' = '00001'). Default ay 7.
-
-    • Auto-Increment: Sa bawat Alt+F9, awtomatikong +1 ang numero at nase-save sa kasalukuyang profile.
-
-    • Reset Button: Ibabalik sa 0 ang sequence number ng kasalukuyang profile.
-    )"
-    mainGui.Add("Edit", "x20 y260 w450 h130 +ReadOnly +Wrap +VScroll -WantReturn", invoiceTxt)
-
+    guiCtrl_PreviewBg   := mainGui.Add("GroupBox", "x22 y292 w436 h45", "")
+    guiCtrl_PreviewText := mainGui.Add("Text", "x32 y307 w416 h25 Center +BackgroundTrans", current_preview)
+    
+    mainGui.SetFont("s8 Italic cGray", "Segoe UI")
+    mainGui.Add("Text", "x22 y345 w436 h40 Center", "Note: The counter auto-increments by +1 every time you trigger the global shortcut string execution inside your active workspace programs.")
     mainGui.SetFont("Norm s10 cDefault", "Segoe UI")
 
     ; =========================================================
@@ -540,294 +486,98 @@ LaunchGUI() {
         "Tip: Piliin ang Modifier at Key. Pwedeng multi-line ang Text (Enter = bagong linya). ▲▼ = i-reorder.")
     mainGui.SetFont("s10 Norm", "Segoe UI")
 
-         ; =========================================================
-    ; TAB 3: VAT CALCULATOR (SALES & AGENT UPGRADE - COMPATIBLE SYNTAX)
+    ; =========================================================
+    ; TAB 3: VAT CALCULATOR
     ; =========================================================
     tabMenu.UseTab(3)
 
     mainGui.SetFont("bold s11", "Segoe UI")
-    mainGui.Add("Text", "x20 y50 w400 h25 c0x0066CC", "📈 Sales VAT & Pricing Dashboard")
+    mainGui.Add("Text", "x20 y50 w400 h25 c0x0066CC", "Automated VAT Deductor Tool")
     mainGui.SetFont("s10 Norm", "Segoe UI")
-    mainGui.Add("Text", "x20 y72 w450 h1 +0x10")
 
-    ; --- SECTION 1: MODE SELECTION (Left Column) ---
+    mainGui.Add("Text", "x20 y76 w450 h1 +0x10")
+
     mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("GroupBox", "x20 y80 w210 h80", "🔄 Sales Pricing Mode")
+    mainGui.Add("Text", "x20 y85 w120 h20", "Active Profile:")
     mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    radDeduct := mainGui.Add("Radio", "x30 y100 w190 h20 Checked", "Deduct VAT (Gross → Net)")
-    radAdd    := mainGui.Add("Radio", "x30 y125 w190 h20", "Add VAT (Net → Gross)")
-    
-    radDeduct.OnEvent("Click", (*) => (global vat_mode := "Deduct", UpdateSalesVatPreview()))
-    radAdd.OnEvent("Click", (*) => (global vat_mode := "Add", UpdateSalesVatPreview()))
+    mainGui.Add("Text", "x145 y85 w200 h20 cGreen", active_profile)
 
-    ; --- SECTION 2: HOTKEY OUTPUT TYPE (Right Column) ---
     mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("GroupBox", "x245 y80 w215 h80", "📋 Hotkey Output Target")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    radOutNet   := mainGui.Add("Radio", "x255 y100 w100 h20 Checked", "Net Amount")
-    radOutVat   := mainGui.Add("Radio", "x360 y100 w90 h20", "VAT Amount")
-    radOutBreak := mainGui.Add("Radio", "x255 y125 w190 h20", "Full Breakdown (Text)")
-    
-    radOutNet.OnEvent("Click", (*) => (global vat_output_type := "Net"))
-    radOutVat.OnEvent("Click", (*) => (global vat_output_type := "VatAmt"))
-    radOutBreak.OnEvent("Click", (*) => (global vat_output_type := "Breakdown"))
+    mainGui.Add("Text", "x20 y113 w120 h20", "VAT Rate (%):")
+    mainGui.SetFont("s10 Norm", "Segoe UI")
 
-    ; --- SECTION 3: VAT RATE & DISCOUNT (Middle Row) ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y175 w80 h20", "VAT Rate:")
-    mainGui.Add("Text", "x245 y175 w110 h20", "Sales Discount (%):")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
+    vatPresets := ["12% (Standard)", "5% (Reduced)", "0% (Zero-rated)", "Custom..."]
+    ddVatPreset := mainGui.Add("DropDownList", "x145 y110 w130 h200", vatPresets)
+    guiCtrl_VatRate := mainGui.Add("Edit", "x282 y110 w55 h25", Format("{:.2f}", vat_rate))
+    mainGui.Add("Text", "x341 y113 w15 h20", "%")
+    guiCtrl_VatPreview := mainGui.Add("Text", "x360 y113 w110 h20 cGray", "")
 
-    vatPresets := ["12% (Standard)", "5% (Reduced)", "0% (Vat-Exempt)", "Custom..."]
-    ddVatPreset := mainGui.Add("DropDownList", "x90 y172 w110 h200", vatPresets)
-    guiCtrl_VatRate := mainGui.Add("Edit", "x205 y172 w40 h23", Format("{:.2f}", vat_rate))
-    
-    guiCtrl_Discount := mainGui.Add("Edit", "x365 y172 w50 h23 Number", "0")
-    guiCtrl_Discount.OnEvent("Change", (*) => (global sales_discount := IsNumber(guiCtrl_Discount.Value) ? Number(guiCtrl_Discount.Value) : 0.0, UpdateSalesVatPreview()))
-
-    ; --- SECTION 4: LIVE PREVIEW & HOTKEY ---
-    mainGui.Add("Text", "x20 y205 w450 h1 +0x10")
-    
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y214 w120 h20", "VAT Hotkey:")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    ddVatMod := mainGui.Add("DropDownList", "x100 y211 w100 h200", modifierChoices)
-    ddVatKey := mainGui.Add("DropDownList", "x205 y211 w60 h300", keyChoices)
-    guiCtrl_VatHKLabel := mainGui.Add("Text", "x275 y214 w190 h18 cGray", "Current: " . sysHK_Vat)
-
-    parsedVat := ParseHKString(sysHK_Vat)
-    SetModDD(ddVatMod, parsedVat.modLabel)
-    SetKeyDD(ddVatKey, parsedVat.keyStr)
-    
-    UpdateVatHKLabel() {
-        sym := modSymMap[ddVatMod.Text]
-        guiCtrl_VatHKLabel.Value := "Current: " . sym . ddVatKey.Text
+    SetVatPresetFromRate(r) {
+        if (r == 12.0)
+            ddVatPreset.Value := 1
+        else if (r == 5.0)
+            ddVatPreset.Value := 2
+        else if (r == 0.0)
+            ddVatPreset.Value := 3
+        else
+            ddVatPreset.Value := 4
     }
-    ddVatMod.OnEvent("Change", (*) => UpdateVatHKLabel())
-    ddVatKey.OnEvent("Change", (*) => UpdateVatHKLabel())
+    SetVatPresetFromRate(vat_rate)
 
-    mainGui.Add("Text", "x20 y242 w450 h1 +0x10")
-
-    ; --- LIVE SIMULATION BOX ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("GroupBox", "x20 y250 w440 h135", "📊 Live Pricing Calculation Simulator (Base: 1,000.00)")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    guiCtrl_SimDetails := mainGui.Add("Text", "x40 y275 w400 h100 c0x333333", "")
-    
-    UpdateSalesVatPreview() {
+    UpdateVatPreview() {
         raw := guiCtrl_VatRate.Value
         if (!IsNumber(raw) || Number(raw) < 0 || Number(raw) > 100) {
-            guiCtrl_SimDetails.Value := "Error: Invalid VAT Rate"
+            guiCtrl_VatPreview.Value := "(invalid)"
             return
         }
         r := Number(raw)
-        baseAmt := 1000.00
-        
-        discVal := (sales_discount / 100) * baseAmt
-        afterDisc := baseAmt - discVal
-        
-        div := 1 + (r / 100)
-        if (vat_mode == "Deduct") {
-            sNet := afterDisc / div
-            sVat := afterDisc - sNet
-            sGross := afterDisc
-        } else {
-            sNet := afterDisc
-            sGross := afterDisc * div
-            sVat := sGross - sNet
-        }
-        
-        guiCtrl_SimDetails.Value := "Original Copied Amount: 1,000.00`n"
-                                  . "Less Discount (" . sales_discount . "%): -" . Round(discVal, 2) . "`n"
-                                  . "--------------------------------------------------------`n"
-                                  . "Net Amount (Vatable): " . Round(sNet, 2) . "`n"
-                                  . "VAT Amount (" . r . "%): " . Round(sVat, 2) . "`n"
-                                  . "Gross Total (Billing): " . Round(sGross, 2)
+        gross := Round(1000 * (1 + r / 100), 2)
+        guiCtrl_VatPreview.Value := gross . " → 1000.00"
     }
-    
-    ; GANITONG AYOS: Inihiwalay ang mga linya at tiniyak na lowercase ang "else" para mawala ang error sa larawan e1ecb5b5-a243-4745-a8ee-df253b406d10
-    SetVatPresetFromRate(r) {
-        if (r == 12.0) 
-        {
-            ddVatPreset.Value := 1
-        }
-        else if (r == 5.0) 
-        {
-            ddVatPreset.Value := 2
-        }
-        else if (r == 0.0) 
-        {
-            ddVatPreset.Value := 3
-        }
-        else 
-        {
-            ddVatPreset.Value := 4
-        }
-    }
-    SetVatPresetFromRate(vat_rate)
-    UpdateSalesVatPreview()
+    UpdateVatPreview()
 
     OnVatPresetChange(*) {
-        if (ddVatPreset.Value == 1) 
-        {
+        if (ddVatPreset.Value == 1)
             guiCtrl_VatRate.Value := "12.00"
-        } 
-        else if (ddVatPreset.Value == 2) 
-        {
+        else if (ddVatPreset.Value == 2)
             guiCtrl_VatRate.Value := "5.00"
-        } 
-        else if (ddVatPreset.Value == 3) 
-        {
+        else if (ddVatPreset.Value == 3)
             guiCtrl_VatRate.Value := "0.00"
-        } 
-        else 
-        {
+        else
             guiCtrl_VatRate.Focus()
-        }
-        UpdateSalesVatPreview()
+        UpdateVatPreview()
     }
     ddVatPreset.OnEvent("Change", OnVatPresetChange)
-    guiCtrl_VatRate.OnEvent("Change", (*) => (OnVatRateChange(), UpdateSalesVatPreview()))
-    
-    OnVatRateChange() {
+
+    OnVatRateChange(*) {
         v := guiCtrl_VatRate.Value
-        if (v == "12" || v == "12.0" || v == "12.00") 
-        {
+        if (v == "12" || v == "12.0" || v == "12.00")
             ddVatPreset.Value := 1
-        } 
-        else if (v == "5" || v == "5.0" || v == "5.00") 
-        {
+        else if (v == "5" || v == "5.0" || v == "5.00")
             ddVatPreset.Value := 2
-        } 
-        else if (v == "0" || v == "0.0" || v == "0.00") 
-        {
+        else if (v == "0" || v == "0.0" || v == "0.00")
             ddVatPreset.Value := 3
-        } 
-        else 
-        {
+        else
             ddVatPreset.Value := 4
-        }
+        UpdateVatPreview()
     }
+    guiCtrl_VatRate.OnEvent("Change", OnVatRateChange)
 
+    mainGui.Add("Text", "x20 y140 w450 h1 +0x10")
 
-    }    ; =========================================================
-    ; TAB 3: VAT CALCULATOR (SALES & AGENT UPGRADE)
-    ; =========================================================
-    tabMenu.UseTab(3)
-
-    mainGui.SetFont("bold s11", "Segoe UI")
-    mainGui.Add("Text", "x20 y50 w400 h25 c0x0066CC", "📈 Sales VAT & Pricing Dashboard")
-    mainGui.SetFont("s10 Norm", "Segoe UI")
-    mainGui.Add("Text", "x20 y72 w450 h1 +0x10")
-
-    ; --- SECTION 1: MODE SELECTION (Left Column) ---
     mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("GroupBox", "x20 y80 w210 h80", "🔄 Sales Pricing Mode")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    radDeduct := mainGui.Add("Radio", "x30 y100 w190 h20 Checked", "Deduct VAT (Gross → Net)")
-    radAdd    := mainGui.Add("Radio", "x30 y125 w190 h20", "Add VAT (Net → Gross)")
-    
-    radDeduct.OnEvent("Click", (*) => (global vat_mode := "Deduct", UpdateVatPreview()))
-    radAdd.OnEvent("Click", (*) => (global vat_mode := "Add", UpdateVatPreview()))
-
-    ; --- SECTION 2: HOTKEY OUTPUT TYPE (Right Column) ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("GroupBox", "x245 y80 w215 h80", "📋 Hotkey Output Target")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    radOutNet   := mainGui.Add("Radio", "x255 y100 w100 h20 Checked", "Net Amount")
-    radOutVat   := mainGui.Add("Radio", "x360 y100 w90 h20", "VAT Amount")
-    radOutBreak := mainGui.Add("Radio", "x255 y125 w190 h20", "Full Breakdown (Text)")
-    
-    radOutNet.OnEvent("Click", (*) => (global vat_output_type := "Net"))
-    radOutVat.OnEvent("Click", (*) => (global vat_output_type := "VatAmt"))
-    radOutBreak.OnEvent("Click", (*) => (global vat_output_type := "Breakdown"))
-
-    ; --- SECTION 3: VAT RATE & DISCOUNT (Middle Row) ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y175 w80 h20", "VAT Rate:")
-    mainGui.Add("Text", "x245 y175 w110 h20", "Sales Discount (%):")
+    mainGui.Add("Text", "x20 y149 w120 h20", "VAT Hotkey:")
     mainGui.SetFont("s9 Norm", "Segoe UI")
 
-    vatPresets := ["12% (Standard)", "5% (Reduced)", "0% (Vat-Exempt)", "Custom..."]
-    ddVatPreset := mainGui.Add("DropDownList", "x90 y172 w110 h200", vatPresets)
-    guiCtrl_VatRate := mainGui.Add("Edit", "x205 y172 w40 h23", Format("{:.2f}", vat_rate))
-    
-    guiCtrl_Discount := mainGui.Add("Edit", "x365 y172 w50 h23 Number", "0")
-    guiCtrl_Discount.OnEvent("Change", (*) => (global sales_discount := IsNumber(guiCtrl_Discount.Value) ? Number(guiCtrl_Discount.Value) : 0.0, UpdateVatPreview()))
-
-    ; --- SECTION 4: LIVE PREVIEW & HOTKEY ---
-    mainGui.Add("Text", "x20 y205 w450 h1 +0x10")
-    
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y214 w120 h20", "VAT Hotkey:")
-    ; =========================================================
-    ; TAB 3: VAT CALCULATOR (SALES & AGENT UPGRADE - FIXED SYNTAX)
-    ; =========================================================
-    tabMenu.UseTab(3)
-
-    mainGui.SetFont("bold s11", "Segoe UI")
-    mainGui.Add("Text", "x20 y50 w400 h25 c0x0066CC", "📈 Sales VAT & Pricing Dashboard")
-    mainGui.SetFont("s10 Norm", "Segoe UI")
-    mainGui.Add("Text", "x20 y72 w450 h1 +0x10")
-
-    ; --- SECTION 1: MODE SELECTION (Left Column) ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("GroupBox", "x20 y80 w210 h80", "🔄 Sales Pricing Mode")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    radDeduct := mainGui.Add("Radio", "x30 y100 w190 h20 Checked", "Deduct VAT (Gross → Net)")
-    radAdd    := mainGui.Add("Radio", "x30 y125 w190 h20", "Add VAT (Net → Gross)")
-    
-    radDeduct.OnEvent("Click", (*) => (global vat_mode := "Deduct", UpdateSalesVatPreview()))
-    radAdd.OnEvent("Click", (*) => (global vat_mode := "Add", UpdateSalesVatPreview()))
-
-    ; --- SECTION 2: HOTKEY OUTPUT TYPE (Right Column) ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("GroupBox", "x245 y80 w215 h80", "📋 Hotkey Output Target")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    radOutNet   := mainGui.Add("Radio", "x255 y100 w100 h20 Checked", "Net Amount")
-    radOutVat   := mainGui.Add("Radio", "x360 y100 w90 h20", "VAT Amount")
-    radOutBreak := mainGui.Add("Radio", "x255 y125 w190 h20", "Full Breakdown (Text)")
-    
-    radOutNet.OnEvent("Click", (*) => (global vat_output_type := "Net"))
-    radOutVat.OnEvent("Click", (*) => (global vat_output_type := "VatAmt"))
-    radOutBreak.OnEvent("Click", (*) => (global vat_output_type := "Breakdown"))
-
-    ; --- SECTION 3: VAT RATE & DISCOUNT (Middle Row) ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y175 w80 h20", "VAT Rate:")
-    mainGui.Add("Text", "x245 y175 w110 h20", "Sales Discount (%):")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-
-    vatPresets := ["12% (Standard)", "5% (Reduced)", "0% (Vat-Exempt)", "Custom..."]
-    ddVatPreset := mainGui.Add("DropDownList", "x90 y172 w110 h200", vatPresets)
-    guiCtrl_VatRate := mainGui.Add("Edit", "x205 y172 w40 h23", Format("{:.2f}", vat_rate))
-    
-    guiCtrl_Discount := mainGui.Add("Edit", "x365 y172 w50 h23 Number", "0")
-    guiCtrl_Discount.OnEvent("Change", (*) => (global sales_discount := IsNumber(guiCtrl_Discount.Value) ? Number(guiCtrl_Discount.Value) : 0.0, UpdateSalesVatPreview()))
-
-    ; --- SECTION 4: LIVE PREVIEW & HOTKEY ---
-    mainGui.Add("Text", "x20 y205 w450 h1 +0x10")
-    
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y214 w120 h20", "VAT Hotkey:")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    ddVatMod := mainGui.Add("DropDownList", "x100 y211 w100 h200", modifierChoices)
-    ddVatKey := mainGui.Add("DropDownList", "x205 y211 w60 h300", keyChoices)
-    guiCtrl_VatHKLabel := mainGui.Add("Text", "x275 y214 w190 h18 cGray", "Current: " . sysHK_Vat)
+    ddVatMod := mainGui.Add("DropDownList", "x145 y147 w100 h200", modifierChoices)
+    ddVatKey := mainGui.Add("DropDownList", "x250 y147 w70 h300", keyChoices)
 
     parsedVat := ParseHKString(sysHK_Vat)
     SetModDD(ddVatMod, parsedVat.modLabel)
     SetKeyDD(ddVatKey, parsedVat.keyStr)
-    
+
+    guiCtrl_VatHKLabel := mainGui.Add("Text", "x326 y150 w140 h18 cGray",
+        "Current: " . sysHK_Vat)
     UpdateVatHKLabel() {
         sym := modSymMap[ddVatMod.Text]
         guiCtrl_VatHKLabel.Value := "Current: " . sym . ddVatKey.Text
@@ -835,90 +585,34 @@ LaunchGUI() {
     ddVatMod.OnEvent("Change", (*) => UpdateVatHKLabel())
     ddVatKey.OnEvent("Change", (*) => UpdateVatHKLabel())
 
-    mainGui.Add("Text", "x20 y242 w450 h1 +0x10")
+    mainGui.Add("Text", "x20 y172 w450 h1 +0x10")
 
-    ; --- LIVE SIMULATION BOX ---
-    mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("GroupBox", "x20 y250 w440 h135", "📊 Live Pricing Calculation Simulator (Base: 1,000.00)")
-    mainGui.SetFont("s9 Norm", "Segoe UI")
-    
-    guiCtrl_SimDetails := mainGui.Add("Text", "x40 y275 w400 h100 c0x333333", "")
-    
-    UpdateSalesVatPreview() {
-        raw := guiCtrl_VatRate.Value
-        if (!IsNumber(raw) || Number(raw) < 0 || Number(raw) > 100) {
-            guiCtrl_SimDetails.Value := "Error: Invalid VAT Rate"
-            return
-        }
-        r := Number(raw)
-        baseAmt := 1000.00
-        
-        discVal := (sales_discount / 100) * baseAmt
-        afterDisc := baseAmt - discVal
-        
-        div := 1 + (r / 100)
-        if (vat_mode == "Deduct") {
-            sNet := afterDisc / div
-            sVat := afterDisc - sNet
-            sGross := afterDisc
-        } else {
-            sNet := afterDisc
-            sGross := afterDisc * div
-            sVat := sGross - sNet
-        }
-        
-        guiCtrl_SimDetails.Value := "Original Copied Amount: 1,000.00`n"
-                                  . "Less Discount (" . sales_discount . "%): -" . Round(discVal, 2) . "`n"
-                                  . "--------------------------------------------------------`n"
-                                  . "Net Amount (Vatable): " . Round(sNet, 2) . "`n"
-                                  . "VAT Amount (" . r . "%): " . Round(sVat, 2) . "`n"
-                                  . "Gross Total (Billing): " . Round(sGross, 2)
-    }
-    
-    ; SINTAX FIX: Ginawang pormal na bracket notation ang mga conditions para iwas error sa larawan f92c65cb-2bb4-45b2-99fc-4f5840280ed4
-    SetVatPresetFromRate(r) {
-        if (r == 12.0) {
-            ddVatPreset.Value := 1
-        } else if (r == 5.0) {
-            ddVatPreset.Value := 2
-        } else if (r == 0.0) {
-            ddVatPreset.Value := 3
-        } else {
-            ddVatPreset.Value := 4
-        }
-    }
-    SetVatPresetFromRate(vat_rate)
-    UpdateSalesVatPreview()
+    mainGui.SetFont("s9 cGray", "Segoe UI")
+    vatTxt := "
+    (
+    💡PAANO GAMITIN:
 
-    OnVatPresetChange(*) {
-        if (ddVatPreset.Value == 1) { 
-            guiCtrl_VatRate.Value := "12.00" 
-        } else if (ddVatPreset.Value == 2) { 
-            guiCtrl_VatRate.Value := "5.00" 
-        } else if (ddVatPreset.Value == 3) { 
-            guiCtrl_VatRate.Value := "0.00" 
-        } else { 
-            guiCtrl_VatRate.Focus() 
-        }
-        UpdateSalesVatPreview()
-    }
-    ddVatPreset.OnEvent("Change", OnVatPresetChange)
-    guiCtrl_VatRate.OnEvent("Change", (*) => (OnVatRateChange(), UpdateSalesVatPreview()))
-    
-    ; SYNTAX FIX: Standard lowercase structure at nakakahon nang maayos
-    OnVatRateChange() {
-        v := guiCtrl_VatRate.Value
-        if (v == "12" || v == "12.0" || v == "12.00") {
-            ddVatPreset.Value := 1
-        } else if (v == "5" || v == "5.0" || v == "5.00") {
-            ddVatPreset.Value := 2
-        } else if (v == "0" || v == "0.0" || v == "0.00") {
-            ddVatPreset.Value := 3
-        } else {
-            ddVatPreset.Value := 4
-        }
-    }
+    1. Piliin ang VAT Rate — preset o mag-type ng custom. 
 
+    2. Piliin ang VAT Hotkey na gusto mo.
+
+    3. I-click ang [ Save All Changes ] para mai-save.
+
+    4. I-highlight ang presyo na may VAT.
+
+    5. Pindutin ang iyong napiling VAT Hotkey.
+
+    💡 MAHALAGANG PAALALA SA VAT TOOL:
+
+    • Numero at kuwit lang ang i-highlight: Huwag isama ang currency symbols tulad ng "₱", "PHP", o "$", pati na rin ang mga letra o spacing (e.g., "₱ 1,500" -> i-highlight lang ang "1,500"). Mag-e-error ang calculator kapag may kasamang letra.
+
+    • Rounding off: Awtomatikong sine-set ng tool ang resulta sa dalawang decimal places (e.g., 133.93).
+
+    • Paano mag-Undo: Kung nagkamali ka ng na-highlight o hindi mo sinasadyang mapalitan ang text, pindutin lang ang [ Ctrl + Z ] sa iyong keyboard para bumalik sa dati ang text.
+
+    • Clipboard backup: Ang huling net amount na kinalkula ay mananatiling naka-copy sa iyong clipboard (ready to paste).
+    )"
+    mainGui.Add("Edit", "x20 y180 w450 h205 +ReadOnly +Wrap +VScroll -WantReturn", vatTxt)
 
     ; =========================================================
     ; TAB 4: ABOUT
@@ -975,15 +669,14 @@ LaunchGUI() {
     mainGui.Show("w500 h470")
 
     ; =========================================================
-    ; GUI INTERNAL FUNCTIONS
+    ; GUI INTERNAL LOGIC (INTEGRATED WITH NEW TILES)
     ; =========================================================
-
     UpdatePreview(*) {
         dlen := (guiCtrl_DigitLen.Value == "" || Number(guiCtrl_DigitLen.Value) < 1)
             ? 7 : Number(guiCtrl_DigitLen.Value)
         temp := GenerateInvoice(guiCtrl_Prefix.Value, guiCtrl_Num.Value,
             guiCtrl_Suffix.Value, dlen)
-        guiCtrl_PreviewText.Value := "Preview: " . temp
+        guiCtrl_PreviewText.Value := temp
     }
 
     LoadProfileIntoGui(pName) {
@@ -994,6 +687,11 @@ LaunchGUI() {
         guiCtrl_DigitLen.Value := IniRead("settings.ini", pSection, "DigitLength", "7")
         loadedRate := Float(IniRead("settings.ini", pSection, "VatRate", "12.0"))
         guiCtrl_VatRate.Value  := Format("{:.2f}", loadedRate)
+        
+        ; Sync real-time mini status tiles
+        guiCtrl_TileProfile.Value := pName
+        guiCtrl_TileVat.Value     := Format("{:.2f}%", loadedRate)
+        
         SetVatPresetFromRate(loadedRate)
         UpdatePreview()
         UpdateVatPreview()
@@ -1058,7 +756,6 @@ LaunchGUI() {
     }
 
     ; --- Tab 2 functions ---
-
     SelectHotkey(CtrlObj, RowNumber) {
         if (RowNumber == 0)
             return
@@ -1070,21 +767,15 @@ LaunchGUI() {
         editTxt.Value := StrReplace(storedTxt, "\n", "`n")
     }
 
-    ; Check if a key conflicts with system hotkeys or existing Tab 2 rows
-    ; excludeRow: row index to skip in LV check (for updates)
     CheckConflict(newKey, excludeRow := 0) {
-        ; Must not conflict with the Manager hotkey (always fixed Alt+F10)
         if (newKey == sysHK_Manager)
             return "'" . newKey . "' ay ginagamit ng Manager hotkey (Alt+F10) — hindi pwedeng palitan!"
-        ; Must not conflict with current invoice hotkey
         invKey := modSymMap[ddInvMod.Text] . ddInvKey.Text
         if (newKey == invKey)
             return "'" . newKey . "' ay ginagamit ng Invoice hotkey — i-save muna ang bagong Invoice key bago gamitin dito."
-        ; Must not conflict with current VAT hotkey
         vatKey := modSymMap[ddVatMod.Text] . ddVatKey.Text
         if (newKey == vatKey)
             return "'" . newKey . "' ay ginagamit ng VAT hotkey — i-save muna ang bagong VAT key bago gamitin dito."
-        ; Must not duplicate in LV
         Loop LV.GetCount() {
             if (A_Index == excludeRow)
                 continue
@@ -1123,6 +814,7 @@ LaunchGUI() {
         editTxt.Value := ""
         ddModifier.Value := 1
         ddKey.Value := 1
+        guiCtrl_TileCount.Value := LV.GetCount() . " Macros Active"
     }
 
     DeleteHotkey(*) {
@@ -1135,6 +827,7 @@ LaunchGUI() {
         editTxt.Value := ""
         ddModifier.Value := 1
         ddKey.Value := 1
+        guiCtrl_TileCount.Value := LV.GetCount() . " Macros Active"
     }
 
     ToggleHotkey(*) {
@@ -1202,7 +895,6 @@ LaunchGUI() {
         global prefix, current_num, suffix, digit_length, vat_rate
         global active_profile, hotkeyList, sysHK_Invoice, sysHK_Vat
 
-        ; Validate Invoice fields
         dlen := Number(guiCtrl_DigitLen.Value)
         if (guiCtrl_DigitLen.Value == "" || dlen < 1) {
             MsgBox("Digit Length ay dapat 1 o higit pa!", "Error", 48)
@@ -1213,19 +905,16 @@ LaunchGUI() {
             return
         }
 
-        ; Validate VAT rate
         rawVat := guiCtrl_VatRate.Value
         if (!IsNumber(rawVat) || Number(rawVat) < 0 || Number(rawVat) > 100) {
             MsgBox("VAT Rate ay dapat numero sa pagitan ng 0 at 100!", "Error", 48)
             return
         }
 
-        ; Build new system hotkey strings
         newInvKey := modSymMap[ddInvMod.Text] . ddInvKey.Text
         newVatKey := modSymMap[ddVatMod.Text] . ddVatKey.Text
         managerKey := sysHK_Manager
 
-        ; Validate: system hotkeys must not conflict with each other
         if (newInvKey == newVatKey) {
             MsgBox("⚠️ Conflict! Ang Invoice Hotkey at VAT Hotkey ay parehong '" . newInvKey . "'!`n`nPiliin ang ibang key para sa isa sa kanila.", "Conflict!", 48)
             return
@@ -1235,7 +924,6 @@ LaunchGUI() {
             return
         }
 
-        ; Validate: system hotkeys must not conflict with Tab 2 custom hotkeys
         Loop LV.GetCount() {
             lvKey := LV.GetText(A_Index, 2)
             if (lvKey == newInvKey) {
@@ -1248,7 +936,6 @@ LaunchGUI() {
             }
         }
 
-        ; All valid — apply
         prefix       := guiCtrl_Prefix.Value
         current_num  := Number(guiCtrl_Num.Value)
         suffix       := guiCtrl_Suffix.Value
@@ -1258,14 +945,12 @@ LaunchGUI() {
         sysHK_Invoice  := newInvKey
         sysHK_Vat      := newVatKey
 
-        ; Save to ini
         IniWrite(active_profile, "settings.ini", "Settings", "ActiveProfile")
         IniWrite(sysHK_Invoice,  "settings.ini", "SystemHotkeys", "Invoice")
         IniWrite(sysHK_Vat,      "settings.ini", "SystemHotkeys", "Vat")
         IniWrite(sysHK_Manager,  "settings.ini", "SystemHotkeys", "Manager")
         SaveProfileSettings(active_profile, prefix, current_num, suffix, digit_length, vat_rate)
 
-        ; Save custom hotkeys
         try IniDelete("settings.ini", "Hotkeys")
         try IniDelete("settings.ini", "HotkeyState")
         hotkeyList := []
