@@ -540,82 +540,143 @@ LaunchGUI() {
         "Tip: Piliin ang Modifier at Key. Pwedeng multi-line ang Text (Enter = bagong linya). ▲▼ = i-reorder.")
     mainGui.SetFont("s10 Norm", "Segoe UI")
 
-    ; =========================================================
-    ; TAB 3: VAT CALCULATOR
+        ; =========================================================
+    ; TAB 3: VAT CALCULATOR (SALES & AGENT UPGRADE - FIXED)
     ; =========================================================
     tabMenu.UseTab(3)
 
     mainGui.SetFont("bold s11", "Segoe UI")
-    mainGui.Add("Text", "x20 y50 w400 h25 c0x0066CC", "Automated VAT Deductor Tool")
+    mainGui.Add("Text", "x20 y50 w400 h25 c0x0066CC", "📈 Sales VAT & Pricing Dashboard")
     mainGui.SetFont("s10 Norm", "Segoe UI")
+    mainGui.Add("Text", "x20 y72 w450 h1 +0x10")
 
-    mainGui.Add("Text", "x20 y76 w450 h1 +0x10")
-
-    ; --- Active profile info ---
+    ; --- SECTION 1: MODE SELECTION (Left Column) ---
     mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y85 w120 h20", "Active Profile:")
+    mainGui.Add("GroupBox", "x20 y80 w210 h80", "🔄 Sales Pricing Mode")
     mainGui.SetFont("s9 Norm", "Segoe UI")
-    mainGui.Add("Text", "x145 y85 w200 h20 cGreen", active_profile)
+    
+    radDeduct := mainGui.Add("Radio", "x30 y100 w190 h20 Checked", "Deduct VAT (Gross → Net)")
+    radAdd    := mainGui.Add("Radio", "x30 y125 w190 h20", "Add VAT (Net → Gross)")
+    
+    radDeduct.OnEvent("Click", (*) => (global vat_mode := "Deduct", UpdateSalesVatPreview()))
+    radAdd.OnEvent("Click", (*) => (global vat_mode := "Add", UpdateSalesVatPreview()))
 
-    ; --- VAT Rate row ---
+    ; --- SECTION 2: HOTKEY OUTPUT TYPE (Right Column) ---
     mainGui.SetFont("bold s9", "Segoe UI")
-    mainGui.Add("Text", "x20 y113 w120 h20", "VAT Rate (%):")
-    mainGui.SetFont("s10 Norm", "Segoe UI")
+    mainGui.Add("GroupBox", "x245 y80 w215 h80", "📋 Hotkey Output Target")
+    mainGui.SetFont("s9 Norm", "Segoe UI")
+    
+    radOutNet   := mainGui.Add("Radio", "x255 y100 w100 h20 Checked", "Net Amount")
+    radOutVat   := mainGui.Add("Radio", "x360 y100 w90 h20", "VAT Amount")
+    radOutBreak := mainGui.Add("Radio", "x255 y125 w190 h20", "Full Breakdown (Text)")
+    
+    radOutNet.OnEvent("Click", (*) => (global vat_output_type := "Net"))
+    radOutVat.OnEvent("Click", (*) => (global vat_output_type := "VatAmt"))
+    radOutBreak.OnEvent("Click", (*) => (global vat_output_type := "Breakdown"))
 
-    vatPresets := ["12% (Standard)", "5% (Reduced)", "0% (Zero-rated)", "Custom..."]
-    ddVatPreset := mainGui.Add("DropDownList", "x145 y110 w130 h200", vatPresets)
-    guiCtrl_VatRate := mainGui.Add("Edit", "x282 y110 w55 h25", Format("{:.2f}", vat_rate))
-    mainGui.Add("Text", "x341 y113 w15 h20", "%")
-    guiCtrl_VatPreview := mainGui.Add("Text", "x360 y113 w110 h20 cGray", "")
+    ; --- SECTION 3: VAT RATE & DISCOUNT (Middle Row) ---
+    mainGui.SetFont("bold s9", "Segoe UI")
+    mainGui.Add("Text", "x20 y175 w80 h20", "VAT Rate:")
+    mainGui.Add("Text", "x245 y175 w110 h20", "Sales Discount (%):")
+    mainGui.SetFont("s9 Norm", "Segoe UI")
 
-    SetVatPresetFromRate(r) {
-        if (r == 12.0)
-            ddVatPreset.Value := 1
-        else if (r == 5.0)
-            ddVatPreset.Value := 2
-        else if (r == 0.0)
-            ddVatPreset.Value := 3
-        else
-            ddVatPreset.Value := 4
+    vatPresets := ["12% (Standard)", "5% (Reduced)", "0% (Vat-Exempt)", "Custom..."]
+    ddVatPreset := mainGui.Add("DropDownList", "x90 y172 w110 h200", vatPresets)
+    guiCtrl_VatRate := mainGui.Add("Edit", "x205 y172 w40 h23", Format("{:.2f}", vat_rate))
+    
+    guiCtrl_Discount := mainGui.Add("Edit", "x365 y172 w50 h23 Number", "0")
+    guiCtrl_Discount.OnEvent("Change", (*) => (global sales_discount := IsNumber(guiCtrl_Discount.Value) ? Number(guiCtrl_Discount.Value) : 0.0, UpdateSalesVatPreview()))
+
+    ; --- SECTION 4: LIVE PREVIEW & HOTKEY ---
+    mainGui.Add("Text", "x20 y205 w450 h1 +0x10")
+    
+    mainGui.SetFont("bold s9", "Segoe UI")
+    mainGui.Add("Text", "x20 y214 w120 h20", "VAT Hotkey:")
+    mainGui.SetFont("s9 Norm", "Segoe UI")
+    
+    ddVatMod := mainGui.Add("DropDownList", "x100 y211 w100 h200", modifierChoices)
+    ddVatKey := mainGui.Add("DropDownList", "x205 y211 w60 h300", keyChoices)
+    guiCtrl_VatHKLabel := mainGui.Add("Text", "x275 y214 w190 h18 cGray", "Current: " . sysHK_Vat)
+
+    parsedVat := ParseHKString(sysHK_Vat)
+    SetModDD(ddVatMod, parsedVat.modLabel)
+    SetKeyDD(ddVatKey, parsedVat.keyStr)
+    
+    UpdateVatHKLabel() {
+        sym := modSymMap[ddVatMod.Text]
+        guiCtrl_VatHKLabel.Value := "Current: " . sym . ddVatKey.Text
     }
-    SetVatPresetFromRate(vat_rate)
+    ddVatMod.OnEvent("Change", (*) => UpdateVatHKLabel())
+    ddVatKey.OnEvent("Change", (*) => UpdateVatHKLabel())
 
-    UpdateVatPreview() {
+    mainGui.Add("Text", "x20 y242 w450 h1 +0x10")
+
+    ; --- LIVE SIMULATION BOX ---
+    mainGui.SetFont("bold s9", "Segoe UI")
+    mainGui.Add("GroupBox", "x20 y250 w440 h135", "📊 Live Pricing Calculation Simulator (Base: 1,000.00)")
+    mainGui.SetFont("s9 Norm", "Segoe UI")
+    
+    guiCtrl_SimDetails := mainGui.Add("Text", "x40 y275 w400 h100 c0x333333", "")
+    
+    ; Binago ang pangalan para maiwasan ang conflict sa image 836ec53d-114e-4df9-8f07-f99268840dba
+    UpdateSalesVatPreview() {
         raw := guiCtrl_VatRate.Value
         if (!IsNumber(raw) || Number(raw) < 0 || Number(raw) > 100) {
-            guiCtrl_VatPreview.Value := "(invalid)"
+            guiCtrl_SimDetails.Value := "Error: Invalid VAT Rate"
             return
         }
         r := Number(raw)
-        gross := Round(1000 * (1 + r / 100), 2)
-        guiCtrl_VatPreview.Value := gross . " → 1000.00"
+        baseAmt := 1000.00
+        
+        discVal := (sales_discount / 100) * baseAmt
+        afterDisc := baseAmt - discVal
+        
+        div := 1 + (r / 100)
+        if (vat_mode == "Deduct") {
+            sNet := afterDisc / div
+            sVat := afterDisc - sNet
+            sGross := afterDisc
+        } else {
+            sNet := afterDisc
+            sGross := afterDisc * div
+            sVat := sGross - sNet
+        }
+        
+        guiCtrl_SimDetails.Value := "Original Copied Amount: 1,000.00`n"
+                                  . "Less Discount (" . sales_discount . "%): -" . Round(discVal, 2) . "`n"
+                                  . "--------------------------------------------------------`n"
+                                  . "Net Amount (Vatable): " . Round(sNet, 2) . "`n"
+                                  . "VAT Amount (" . r . "%): " . Round(sVat, 2) . "`n"
+                                  . "Gross Total (Billing): " . Round(sGross, 2)
     }
-    UpdateVatPreview()
+    
+    SetVatPresetFromRate(r) {
+        if (r == 12.0) { ddVatPreset.Value := 1 }
+        else if (r == 5.0) { ddVatPreset.Value := 2 }
+        else if (r == 0.0) { ddVatPreset.Value := 3 }
+        else { ddVatPreset.Value := 4 }
+    }
+    SetVatPresetFromRate(vat_rate)
+    UpdateSalesVatPreview()
 
     OnVatPresetChange(*) {
-        if (ddVatPreset.Value == 1)
-            guiCtrl_VatRate.Value := "12.00"
-        else if (ddVatPreset.Value == 2)
-            guiCtrl_VatRate.Value := "5.00"
-        else if (ddVatPreset.Value == 3)
-            guiCtrl_VatRate.Value := "0.00"
-        else
-            guiCtrl_VatRate.Focus()
-        UpdateVatPreview()
+        if (ddVatPreset.Value == 1) { guiCtrl_VatRate.Value := "12.00" }
+        else if (ddVatPreset.Value == 2) { guiCtrl_VatRate.Value := "5.00" }
+        else if (ddVatPreset.Value == 3) { guiCtrl_VatRate.Value := "0.00" }
+        else { guiCtrl_VatRate.Focus() }
+        UpdateSalesVatPreview()
     }
     ddVatPreset.OnEvent("Change", OnVatPresetChange)
-
-    OnVatRateChange(*) {
+    guiCtrl_VatRate.OnEvent("Change", (*) => (OnVatRateChange(), UpdateSalesVatPreview()))
+    
+    OnVatRateChange() {
         v := guiCtrl_VatRate.Value
-        if (v == "12" || v == "12.0" || v == "12.00")
-            ddVatPreset.Value := 1
-        else if (v == "5" || v == "5.0" || v == "5.00")
-            ddVatPreset.Value := 2
-        else if (v == "0" || v == "0.0" || v == "0.00")
-            ddVatPreset.Value := 3
-        else
-            ddVatPreset.Value := 4
-        UpdateVatPreview()
+        if (v == "12" || v == "12.0" || v == "12.00") { ddVatPreset.Value := 1 }
+        else if (v == "5" || v == "5.0" || v == "5.00") { ddVatPreset.Value := 2 }
+        else if (v == "0" || v == "0.0" || v == "0.00") { ddVatPreset.Value := 3 }
+        else { ddVatPreset.Value := 4 }
+    }
+
     }    ; =========================================================
     ; TAB 3: VAT CALCULATOR (SALES & AGENT UPGRADE)
     ; =========================================================
