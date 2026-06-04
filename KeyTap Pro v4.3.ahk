@@ -19,10 +19,14 @@ global prefix         := "AAPI"
 global suffix         := "S"
 global digit_length   := 7
 global vat_rate       := 12.0
+global vat_mode        := "Deduct"  ; <--- BAGONG DAGDAG (Default Sales Mode)
+global vat_output_type := "Net"     ; <--- BAGONG DAGDAG (Default Output Target)
+global sales_discount  := 0.0       ; <--- BAGONG DAGDAG (Default Discount %)
 global active_profile := "Default"
 global mainGui        := ""
 global hotkeyList     := []
 global activeHotkeys  := Map()
+
 
 ; System hotkey strings (global, loaded from ini)
 global sysHK_Invoice  := "!F9"
