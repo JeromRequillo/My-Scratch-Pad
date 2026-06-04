@@ -540,8 +540,8 @@ LaunchGUI() {
         "Tip: Piliin ang Modifier at Key. Pwedeng multi-line ang Text (Enter = bagong linya). ▲▼ = i-reorder.")
     mainGui.SetFont("s10 Norm", "Segoe UI")
 
-        ; =========================================================
-    ; TAB 3: VAT CALCULATOR (SALES & AGENT UPGRADE - FIXED)
+         ; =========================================================
+    ; TAB 3: VAT CALCULATOR (SALES & AGENT UPGRADE - COMPATIBLE SYNTAX)
     ; =========================================================
     tabMenu.UseTab(3)
 
@@ -618,7 +618,6 @@ LaunchGUI() {
     
     guiCtrl_SimDetails := mainGui.Add("Text", "x40 y275 w400 h100 c0x333333", "")
     
-    ; Binago ang pangalan para maiwasan ang conflict sa image 836ec53d-114e-4df9-8f07-f99268840dba
     UpdateSalesVatPreview() {
         raw := guiCtrl_VatRate.Value
         if (!IsNumber(raw) || Number(raw) < 0 || Number(raw) > 100) {
@@ -650,20 +649,45 @@ LaunchGUI() {
                                   . "Gross Total (Billing): " . Round(sGross, 2)
     }
     
+    ; GANITONG AYOS: Inihiwalay ang mga linya at tiniyak na lowercase ang "else" para mawala ang error sa larawan e1ecb5b5-a243-4745-a8ee-df253b406d10
     SetVatPresetFromRate(r) {
-        if (r == 12.0) { ddVatPreset.Value := 1 }
-        else if (r == 5.0) { ddVatPreset.Value := 2 }
-        else if (r == 0.0) { ddVatPreset.Value := 3 }
-        else { ddVatPreset.Value := 4 }
+        if (r == 12.0) 
+        {
+            ddVatPreset.Value := 1
+        }
+        else if (r == 5.0) 
+        {
+            ddVatPreset.Value := 2
+        }
+        else if (r == 0.0) 
+        {
+            ddVatPreset.Value := 3
+        }
+        else 
+        {
+            ddVatPreset.Value := 4
+        }
     }
     SetVatPresetFromRate(vat_rate)
     UpdateSalesVatPreview()
 
     OnVatPresetChange(*) {
-        if (ddVatPreset.Value == 1) { guiCtrl_VatRate.Value := "12.00" }
-        else if (ddVatPreset.Value == 2) { guiCtrl_VatRate.Value := "5.00" }
-        else if (ddVatPreset.Value == 3) { guiCtrl_VatRate.Value := "0.00" }
-        else { guiCtrl_VatRate.Focus() }
+        if (ddVatPreset.Value == 1) 
+        {
+            guiCtrl_VatRate.Value := "12.00"
+        } 
+        else if (ddVatPreset.Value == 2) 
+        {
+            guiCtrl_VatRate.Value := "5.00"
+        } 
+        else if (ddVatPreset.Value == 3) 
+        {
+            guiCtrl_VatRate.Value := "0.00"
+        } 
+        else 
+        {
+            guiCtrl_VatRate.Focus()
+        }
         UpdateSalesVatPreview()
     }
     ddVatPreset.OnEvent("Change", OnVatPresetChange)
@@ -671,11 +695,24 @@ LaunchGUI() {
     
     OnVatRateChange() {
         v := guiCtrl_VatRate.Value
-        if (v == "12" || v == "12.0" || v == "12.00") { ddVatPreset.Value := 1 }
-        else if (v == "5" || v == "5.0" || v == "5.00") { ddVatPreset.Value := 2 }
-        else if (v == "0" || v == "0.0" || v == "0.00") { ddVatPreset.Value := 3 }
-        else { ddVatPreset.Value := 4 }
+        if (v == "12" || v == "12.0" || v == "12.00") 
+        {
+            ddVatPreset.Value := 1
+        } 
+        else if (v == "5" || v == "5.0" || v == "5.00") 
+        {
+            ddVatPreset.Value := 2
+        } 
+        else if (v == "0" || v == "0.0" || v == "0.00") 
+        {
+            ddVatPreset.Value := 3
+        } 
+        else 
+        {
+            ddVatPreset.Value := 4
+        }
     }
+
 
     }    ; =========================================================
     ; TAB 3: VAT CALCULATOR (SALES & AGENT UPGRADE)
