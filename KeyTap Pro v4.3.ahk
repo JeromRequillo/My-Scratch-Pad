@@ -160,7 +160,8 @@ DoInvoiceHotkey() {
 }
 
 DoVatHotkey() {
-    global vat_rate
+    global vat_rate, vat_mode, vat_output_type, sales_discount
+    
     A_Clipboard := ""
     Send("^c")
     if !ClipWait(1) {
@@ -168,20 +169,55 @@ DoVatHotkey() {
         SetTimer(() => ToolTip(), -2000)
         return
     }
+    
     CleanAmount := StrReplace(A_Clipboard, ",", "")
     if IsNumber(CleanAmount) {
-        divisor      := 1 + (vat_rate / 100)
-        NetAmount    := Number(CleanAmount) / divisor
-        FormattedNet := Round(NetAmount, 2)
-        A_Clipboard  := FormattedNet
+        InputAmt := Number(CleanAmount)
+        
+        ; 1. Ilapat ang Discount kung mayroon
+        if (sales_discount > 0) {
+            InputAmt := InputAmt * (1 - (sales_discount / 100))
+        }
+        
+        divisor := 1 + (vat_rate / 100)
+        
+        ; 2. Kalkulahin ang Net, VAT, at Gross base sa Mode
+        if (vat_mode == "Deduct") {
+            GrossAmt := InputAmt
+            NetAmount := GrossAmt / divisor
+            VatAmt    := GrossAmt - NetAmount
+        } else {
+            NetAmount := InputAmt
+            GrossAmt := NetAmount * divisor
+            VatAmt    := GrossAmt - NetAmount
+        }
+        
+        ; Format sa dalawang decimal places
+        FmtNet   := Round(NetAmount, 2)
+        FmtVat   := Round(VatAmt, 2)
+        FmtGross := Round(GrossAmt, 2)
+        
+        ; 3. Tukuyin kung ano ang i-pe-paste base sa pinili sa GUI
+        if (vat_output_type == "Net") {
+            A_Clipboard := FmtNet
+            ToolTipText := "Pasted Net: " . FmtNet
+        } else if (vat_output_type == "VatAmt") {
+            A_Clipboard := FmtVat
+            ToolTipText := "Pasted VAT Amt: " . FmtVat
+        } else {
+            A_Clipboard := "Net: " . FmtNet . "`r`nVAT (" . vat_rate . "%): " . FmtVat . "`r`nTotal Gross: " . FmtGross
+            ToolTipText := "Pasted Full Breakdown!"
+        }
+        
         Send("^v")
-        ToolTip("VAT " . vat_rate . "% Deducted: " . FormattedNet)
+        ToolTip(ToolTipText)
         SetTimer(() => ToolTip(), -2000)
     } else {
         ToolTip("Error: Hindi ito numero!")
         SetTimer(() => ToolTip(), -2000)
     }
 }
+
 
 ; =========================================================
 ; CUSTOM TEXT HOTKEYS
