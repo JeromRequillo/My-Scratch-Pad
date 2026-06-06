@@ -1166,15 +1166,14 @@ Multiple Profiles are supported within a single installation. Each profile maint
     mainGui.SetFont("s9 Norm", "Segoe UI")
     clTxt := "
     (
-v4.4  —  Full English conversion across all tabs. All labels, instructions, tooltips, dialogs, and error messages are now in professional English. Live computation added to the built-in calculator. Double-click on the system tray icon now opens the Manager window.
 
-v4.3  —  VAT and Discount tab completely redesigned with a wider window layout (680px). GroupBox containers added throughout for visual clarity. Built-in live calculator with a full per-transaction breakdown. Discount hotkey with multi-line support. VAT Add and Deduct mode toggle using radio buttons. Quick-set discount buttons at 5%, 10%, 15%, and 20%. Live peso preview on all rate settings.
+v4.4  —  VAT and Discount tab completely redesigned with a wider window layout (680px). GroupBox containers added throughout for visual clarity. Built-in live calculator with a full per-transaction breakdown. Discount hotkey with multi-line support. VAT Add and Deduct mode toggle using radio buttons. Quick-set discount buttons at 5%, 10%, 15%, and 20%. Live peso preview on all rate settings.
 
-v4.2  —  Invoice, VAT, and Manager hotkeys are now fully configurable from within the application. Hotkey conflict detection was implemented. VAT rate is now stored independently per Profile.
+v4.3  —  Invoice, VAT, and Manager hotkeys are now fully configurable from within the application. Hotkey conflict detection was implemented. VAT rate is now stored independently per Profile.
 
-v4.1  —  Multiple Profile support was introduced. The Custom Text Hotkey manager received enable and disable toggles and Move Up and Move Down reorder controls.
+v4.2  —  Multiple Profile support was introduced. The Custom Text Hotkey manager received enable and disable toggles and Move Up and Move Down reorder controls.
 
-v4.0  —  Initial public release. Features included auto-invoice number generation with configurable prefix, suffix, and digit length, a VAT deductor hotkey, and system tray integration.
+v4.1  —  Initial public release. Features included auto-invoice number generation with configurable prefix, suffix, and digit length, a VAT deductor hotkey, and system tray integration.
     )"
     mainGui.Add("Edit", "x27 y478 w592 h122 +ReadOnly +Wrap +VScroll -WantReturn", clTxt)
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
