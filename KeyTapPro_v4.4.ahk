@@ -494,7 +494,7 @@ LaunchGUI() {
     mainGui.Add("Text", "x345 y148 w80 h22 +0x200", "Digit Length:")
     guiCtrl_DigitLen := mainGui.Add("Edit", "x430 y146 w35 h24 Number", digit_length)
     mainGui.SetFont("s8 cGray Italic", "Segoe UI")
-    mainGui.Add("Text", "x470 y150 w160 h18", "e.g. with 7 digits, the number 1 becomes 0000001")
+    mainGui.Add("Text", "x470 y150 w160 h18", "Enter digit count")
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     guiCtrl_Prefix.OnEvent("Change", UpdatePreview)
