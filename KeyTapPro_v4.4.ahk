@@ -687,7 +687,7 @@ The current sequence number is automatically saved to settings.ini after every h
     mainGui.Add("Text", "x20 y48 w500 h26 c0x0055AA", "💰 VAT & Discount Tool")
     mainGui.SetFont("s9 Norm cGray", "Segoe UI")
     mainGui.Add("Text", "x20 y74 w620 h18",
-        "Configure your VAT rate, discount rate, and their respective hotkeys below. Use the built-in calculator for a detailed breakdown of any transaction before committing the values.")
+        "Configure your VAT rate, discount rate, and their respective hotkeys below.")
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     ; ── SECTION 1: VAT SETTINGS ──────────────────────────────
@@ -766,7 +766,7 @@ The current sequence number is automatically saved to settings.ini after every h
     ; Multi-line tip
     mainGui.SetFont("s8 cGray Italic", "Segoe UI")
     mainGui.Add("Text", "x345 y252 w280 h30",
-        "This hotkey operates on highlighted text in any application. It supports multiple lines simultaneously — you can highlight an entire column of amounts and all values will be discounted in one keystroke.")
+        "This hotkey operates on highlighted text in any application.")
     mainGui.SetFont("s9 Norm cDefault", "Segoe UI")
 
     ; ── SECTION 3: IN-APP CALCULATOR ─────────────────────────
@@ -968,7 +968,7 @@ The current sequence number is automatically saved to settings.ini after every h
         rawVat  := calcVatInput.Value
 
         if (!IsNumber(rawAmt) || Number(rawAmt) <= 0) {
-            calcNetLabel.Value   := "Please enter a valid amount to begin."
+            calcNetLabel.Value   := "Enter VAlid Amount."
             calcGrossLabel.Value := "—"
             calcDiscLabel.Value  := "—"
             calcAfterDisc.Value  := "—"
@@ -1093,11 +1093,11 @@ The current sequence number is automatically saved to settings.ini after every h
     mainGui.Add("Text", "x30 y68 w380 h30", "🎯 KeyTap Pro  v4.4")
     mainGui.SetFont("s9 Norm", "Segoe UI")
     mainGui.Add("Text", "x30 y100 w85 h20 +0x200", "Version:")
-    mainGui.Add("Text", "x118 y100 w270 h20", "4.4.0  —  Full English UI, Professional Layout")
+    mainGui.Add("Text", "x118 y100 w270 h20", "4.4.0 ")
     mainGui.Add("Text", "x30 y120 w85 h20 +0x200", "Developer:")
     mainGui.Add("Text", "x118 y120 w180 h20", "Jerom Requillo")
     mainGui.Add("Text", "x30 y140 w85 h20 +0x200", "Build Date:")
-    mainGui.Add("Text", "x118 y140 w180 h20", "June 2026")
+    mainGui.Add("Text", "x118 y140 w180 h20", "2026")
     mainGui.SetFont("italic s9 c0x0055AA", "Segoe UI")
     mainGui.Add("Link", "x420 y100 w205 h20",
         'GitHub: <a href="https://github.com/JeromRequillo">@JeromRequillo</a>')
