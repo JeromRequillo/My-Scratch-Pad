@@ -475,7 +475,7 @@ LaunchGUI() {
     btnDelProfile := mainGui.Add("Button", "x278 y116 w33 h24", "🗑")
     mainGui.SetFont("s8 cGray Italic", "Segoe UI")
     mainGui.Add("Text", "x28 y145 w285 h18",
-        "Each profile maintains its own independent sequence number and format settings.")
+        "Each profile has its own independent sequence & format settings.")
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     btnNewProfile.OnEvent("Click", NewProfile)
