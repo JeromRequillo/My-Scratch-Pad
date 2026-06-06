@@ -511,7 +511,7 @@ LaunchGUI() {
     btnReset := mainGui.Add("Button", "x228 y201 w82 h28", "↩ Reset to 0")
     mainGui.SetFont("s8 cGray Italic", "Segoe UI")
     mainGui.Add("Text", "x28 y235 w285 h18",
-        "The sequence number automatically increments by 1 after each hotkey press.")
+        "Enter Invoice Series Here.")
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     guiCtrl_Num.OnEvent("Change", UpdatePreview)
