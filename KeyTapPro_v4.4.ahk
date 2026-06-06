@@ -600,7 +600,7 @@ The current sequence number is automatically saved to settings.ini after every h
     mainGui.Add("Text", "x20 y48 w500 h28 c0x0055AA", "⌨ Custom Text Hotkeys")
     mainGui.SetFont("s9 Norm cGray", "Segoe UI")
     mainGui.Add("Text", "x20 y76 w630 h18",
-        "Assign a keyboard shortcut to any text — company names, addresses, email templates, account numbers, or any phrase you find yourself typing repeatedly.")
+        "Assign a keyboard shortcut to any text: company names, addresses, email templates, account numbers, or any phrase.")
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     ; ── HOTKEY LIST ──────────────────────────────────────────
