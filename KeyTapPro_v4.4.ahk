@@ -649,7 +649,7 @@ The current sequence number is automatically saved to settings.ini after every h
     mainGui.Add("Text", "x345 y343 w40 h24 +0x200", "→")
     mainGui.SetFont("s9 cGray Italic", "Segoe UI")
     mainGui.Add("Text", "x365 y343 w260 h24 +0x200",
-        "When this key combination is pressed in any application, the text entered below will be typed out automatically.")
+        "Select Key Combination Here.")
     mainGui.SetFont("s9 Norm cDefault", "Segoe UI")
 
     ; Row 2: Text output
