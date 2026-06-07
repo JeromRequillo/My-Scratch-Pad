@@ -233,16 +233,24 @@ OpenFolder(folderPath) {
     
     Loop Files, folderPath . "*.*", "F" {
         try {
+             
+            
             Run('"' . A_LoopFilePath . '"')
             fileCount++
-        } catch {
             
+            
+            Sleep(1000) 
+        } catch {
             continue
         }
     }
     
+    
     if (fileCount > 0) {
-        ToolTip("🚀 Opened " . fileCount . " file(s) from: " . folderPath)
+        
+        SoundBeep(1000, 300)
+        SoundBeep(1200, 400)
+        ToolTip("🚀 Completed: " . fileCount . " files are now active.")
     } else {
         ToolTip("📂 Folder is empty (No files found): " . folderPath)
     }
