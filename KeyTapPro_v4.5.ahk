@@ -223,9 +223,30 @@ OpenFolder(folderPath) {
         SetTimer(() => ToolTip(), -3000)
         return
     }
-    Run("explorer.exe `"" . folderPath . "`"")
-    ToolTip("📂 Opened: " . folderPath)
-    SetTimer(() => ToolTip(), -2000)
+    
+    
+    if (SubStr(folderPath, -1) != "\")
+        folderPath .= "\"
+        
+    fileCount := 0
+    
+    
+    Loop Files, folderPath . "*.*", "F" {
+        try {
+            Run('"' . A_LoopFilePath . '"')
+            fileCount++
+        } catch {
+            
+            continue
+        }
+    }
+    
+    if (fileCount > 0) {
+        ToolTip("🚀 Opened " . fileCount . " file(s) from: " . folderPath)
+    } else {
+        ToolTip("📂 Folder is empty (No files found): " . folderPath)
+    }
+    SetTimer(() => ToolTip(), -2500)
 }
 
 ; =========================================================
@@ -1324,18 +1345,21 @@ The current sequence number is automatically saved to settings.ini after every h
     }
 
     OpenSelectedFolder(*) {
-        selectedRow := FL_LV.GetNext()
-        if (selectedRow == 0) {
-            MsgBox("Please select a folder entry from the list first.", "No Selection", 48)
-            return
-        }
-        pth := FL_LV.GetText(selectedRow, 3)
-        if (!DirExist(pth)) {
-            MsgBox("The folder path does not exist or is not accessible:`n`n" . pth, "Folder Not Found", 48)
-            return
-        }
-        Run("explorer.exe `"" . pth . "`"")
+    selectedRow := FL_LV.GetNext()
+    if (selectedRow == 0) {
+        MsgBox("Please select a folder entry from the list first.", "No Selection", 48)
+        return
     }
+    pth := FL_LV.GetNext() ? FL_LV.GetText(selectedRow, 3) : ""
+    
+    if (!DirExist(pth)) {
+        MsgBox("The folder path does not exist or is not accessible:`n`n" . pth, "Folder Not Found", 48)
+        return
+    }
+    
+    
+    OpenFolder(pth)
+}
 
     ; =========================================================
     ; TAB 5: ABOUT
