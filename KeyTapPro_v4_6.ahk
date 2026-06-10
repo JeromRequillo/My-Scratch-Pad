@@ -2035,7 +2035,7 @@ LaunchScratchpad() {
     scratchEdit := scratchGui.Add("Edit", "x8 y28 w384 h280 +Multi +WantReturn +VScroll +Wrap", savedContent)
 
     btnCopy  := scratchGui.Add("Button", "x8   y316 w90 h28", "📋 Copy All")
-    btnSave  := scratchGui.Add("Button", "x104 y316 w80 h28", "💾 Save Now")
+    btnSave  := scratchGui.Add("Button", "x104 y316 w80 h28", "💾 Save ")
     btnClear := scratchGui.Add("Button", "x190 y316 w80 h28", "🗑 Clear")
     btnPin   := scratchGui.Add("Button", "x302 y316 w90 h28", "📌 Stay Top")
 
