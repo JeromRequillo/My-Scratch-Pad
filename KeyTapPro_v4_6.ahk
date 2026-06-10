@@ -1257,13 +1257,13 @@ The current sequence number is automatically saved to settings.ini after every h
     mainGui.Add("GroupBox", "x15 y525 w305 h50", "  💡 Quick Tips")
     mainGui.SetFont("s8 Norm", "Segoe UI")
     mainGui.Add("Text", "x28 y542 w285 h30",
-        "You can register network paths (\\server\share), USB drives, or any local folder. Hotkeys are registered globally — they work from any application.")
+        "You can register network paths (\\server\share), USB drives, or any local folder. ")
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     mainGui.Add("GroupBox", "x330 y525 w305 h50", "  📌 Storage")
     mainGui.SetFont("s8 Norm", "Segoe UI")
     mainGui.Add("Text", "x343 y542 w285 h30",
-        "All folder entries are saved to settings.ini under [FolderLauncher]. They reload automatically on next launch.")
+        "All folder entries are saved to settings.ini under [FolderLauncher]. ")
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     ; ── FOLDER LIST CLICK → LOAD INTO EDITOR ─────────────────
