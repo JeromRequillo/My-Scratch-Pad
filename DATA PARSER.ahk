@@ -34,14 +34,14 @@ ParseSuzukiGroupData() {
         
         if (isLongVIN || isShortChassis) {
             currentChassis := StrUpper(line)
-            ; I-reset ang mga holders kapag bagong chassis
+            
             tempPcs := ""
             tempStatus := ""
             continue
         }
         
         
-        if !RegExMatch(line, "i)^[0-9][A-Z0-9\-]{9,15}$", &_) { ; Kung HINDI ito mukhang part number, description line ito
+        if !RegExMatch(line, "i)^[0-9][A-Z0-9\-]{9,15}$", &_) { 
             
             
             if RegExMatch(line, "i)^(\d+)\s*pc", &matchPcs) {
@@ -54,13 +54,13 @@ ParseSuzukiGroupData() {
             if RegExMatch(line, "i)-(a/s|b/o|p/s)$", &matchStatus) {
                 statusWord := StrUpper(matchStatus[1])
                 if (statusWord == "A/S")
-                    tempStatus := "All Supply"
+                    tempStatus := "ALL SUPPLY"
                 else if (statusWord == "B/O")
-                    tempStatus := "Back Order"
+                    tempStatus := "BACK ORDER"
                 else if (statusWord == "P/S")
-                    tempStatus := "Partial Supply"
+                    tempStatus := "PARTIAL SUPPLY"
             } else {
-                tempStatus := "All Supply" 
+                tempStatus := "ALL SUPPLY" 
             }
             
             continue 
@@ -110,13 +110,13 @@ ParseSuzukiGroupData() {
     }
     
     if (excelOutput == "") {
-        ToolTip("❌ Walang nakitang valid na data!")
+        ToolTip("❌ No Valid Data Found!")
         SetTimer(() => ToolTip(), -2000)
         return
     }
     
     A_Clipboard := excelOutput
     SoundBeep(1500, 300)
-    ToolTip("⚡ Swabe! Pasok na pati automatic All Supply.")
+    ToolTip("⚡ All Goods!.")
     SetTimer(() => ToolTip(), -3000)
 }
