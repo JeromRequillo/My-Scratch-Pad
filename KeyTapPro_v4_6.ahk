@@ -1,5 +1,5 @@
-;@Ahk2Exe-SetFileVersion 4.5.0.0
-;@Ahk2Exe-SetProductVersion 4.5.0.0
+;@Ahk2Exe-SetFileVersion 4.6.0.0
+;@Ahk2Exe-SetProductVersion 4.6.0.0
 ;@Ahk2Exe-SetCompanyName Jerom Requillo
 ;@Ahk2Exe-SetDescription KeyTap Pro - Workflow Automation Suite
 ;@Ahk2Exe-SetCopyright Copyright (C) 2026 Jerom Requillo. All rights reserved.
