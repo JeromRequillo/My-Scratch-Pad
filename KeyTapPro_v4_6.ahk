@@ -11,9 +11,8 @@
 A_IconTip := "🎯 KeyTap Pro v4.6"
 TrayRecalcMenu()
 
-; =========================================================
 ; Global Variables
-; =========================================================
+
 global current_num    := "0"
 global prefix         := "AAPI"
 global suffix         := "S"
@@ -42,9 +41,9 @@ global sysFunc_Vat      := ""
 global sysFunc_Discount := ""
 global sysFunc_Manager  := ""
 
-; =========================================================
+
 ; STARTUP
-; =========================================================
+
 LoadSettings()
 RegisterSystemHotkeys()
 RegisterCustomHotkeys()
@@ -53,9 +52,9 @@ RegisterFolderHotkeys()
 OnMessage(0x404, OnTrayIcon)
 return
 
-; =========================================================
+
 ; TRAY
-; =========================================================
+
 TrayRecalcMenu() {
     Tray := A_TrayMenu
     Tray.Delete()
@@ -73,9 +72,9 @@ OnTrayIcon(wParam, lParam, msg, hwnd) {
     }
 }
 
-; =========================================================
+
 ; LOAD SETTINGS
-; =========================================================
+
 LoadSettings() {
     global current_num, prefix, suffix, digit_length, vat_rate, discount_rate, vat_mode
     global active_profile, hotkeyList, sysHK_Invoice, sysHK_Vat, sysHK_Discount, sysHK_Manager
@@ -150,9 +149,9 @@ LoadSettings() {
     }
 }
 
-; =========================================================
+
 ; REGISTER SYSTEM HOTKEYS
-; =========================================================
+
 RegisterSystemHotkeys() {
     global sysHK_Invoice, sysHK_Vat, sysHK_Discount, sysHK_Manager
     global sysFunc_Invoice, sysFunc_Vat, sysFunc_Discount, sysFunc_Manager
@@ -191,9 +190,9 @@ RegisterSystemHotkeys() {
     }
 }
 
-; =========================================================
+
 ; REGISTER FOLDER HOTKEYS
-; =========================================================
+
 RegisterFolderHotkeys() {
     global folderLauncherList, activeFolderHotkeys
 
@@ -268,9 +267,9 @@ OpenFolder(folderPath) {
     SetTimer(() => ToolTip(), -2500)
 }
 
-; =========================================================
+
 ; SYSTEM HOTKEY ACTIONS
-; =========================================================
+
 DoInvoiceHotkey() {
     Critical()
     global current_num, active_profile
@@ -399,9 +398,9 @@ DoDiscountHotkey() {
     SetTimer(() => ToolTip(), -2000)
 }
 
-; =========================================================
+
 ; CUSTOM TEXT HOTKEYS
-; =========================================================
+
 RegisterCustomHotkeys() {
     global hotkeyList, activeHotkeys
 
@@ -435,9 +434,9 @@ SendTextSafe(txt) {
         try Hotkey(hkStr, hkFunc, "On")
 }
 
-; =========================================================
+
 ; HELPERS
-; =========================================================
+
 GenerateInvoice(p := "", n := 0, s := "", dlen := 0) {
     global prefix, current_num, suffix, digit_length
     target_prefix := (p == "")   ? prefix       : p
@@ -500,9 +499,9 @@ ParseHKString(hkStr) {
     return {modLabel: "Alt (!)", keyStr: hkStr}
 }
 
-; =========================================================
+
 ; MAIN GUI
-; =========================================================
+
 LaunchGUI() {
     global mainGui, current_num, prefix, suffix, digit_length, vat_rate
     global active_profile, hotkeyList, sysHK_Invoice, sysHK_Vat, sysHK_Manager
@@ -558,9 +557,9 @@ LaunchGUI() {
         dd.Value := 1
     }
 
-    ; =========================================================
+    
     ; TAB 1: INVOICE CONFIGURATION
-    ; =========================================================
+    
     tabMenu.UseTab(1)
 
     mainGui.SetFont("bold s13", "Segoe UI")
@@ -695,9 +694,9 @@ The current sequence number is automatically saved to settings.ini after every h
     mainGui.Add("Edit", "x340 y355 w285 h188 +ReadOnly +Wrap -WantReturn +VScroll", notesTxt)
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
-    ; =========================================================
+    
     ; TAB 2: CUSTOM TEXT HOTKEYS
-    ; =========================================================
+    
     tabMenu.UseTab(2)
 
     mainGui.SetFont("bold s13", "Segoe UI")
@@ -776,9 +775,9 @@ The current sequence number is automatically saved to settings.ini after every h
     btnMoveDown.OnEvent("Click", MoveRowDown)
     LV.OnEvent("Click", SelectHotkey)
 
-    ; =========================================================
+    
     ; TAB 3: VAT CALCULATOR
-    ; =========================================================
+    
     tabMenu.UseTab(3)
 
     mainGui.SetFont("bold s12", "Segoe UI")
@@ -1160,9 +1159,9 @@ The current sequence number is automatically saved to settings.ini after every h
     }
     btnCopyAll.OnEvent("Click", OnCopyAll)
 
-    ; =========================================================
+    
     ; TAB 4: FOLDER LAUNCHER
-    ; =========================================================
+    
     tabMenu.UseTab(4)
 
     ; ── HEADER ───────────────────────────────────────────────
@@ -1394,10 +1393,10 @@ The current sequence number is automatically saved to settings.ini after every h
     OpenFolder(pth)
 }
 
-    ; =========================================================
-    ; =========================================================
+    
+    
     ; TAB 5: MINI APPS
-    ; =========================================================
+    
     tabMenu.UseTab(5)
 
     mainGui.SetFont("bold s13", "Segoe UI")
@@ -1504,7 +1503,7 @@ The current sequence number is automatically saved to settings.ini after every h
     btnLaunchCase.OnEvent("Click", (*) => LaunchCaseConverter())
 
     ; TAB 6: ABOUT
-    ; =========================================================
+    
     tabMenu.UseTab(6)
 
     mainGui.Add("GroupBox", "x15 y48 w620 h118", "  🎯 About This Application")
@@ -1611,9 +1610,9 @@ v4.1  —  Initial public release. Features included auto-invoice number generat
 
     mainGui.Show("w680 h640")
 
-    ; =========================================================
+    
     ; GUI INTERNAL FUNCTIONS
-    ; =========================================================
+    
 
     UpdatePreview(*) {
         dlen := (guiCtrl_DigitLen.Value == "" || Number(guiCtrl_DigitLen.Value) < 1)
@@ -1849,9 +1848,9 @@ v4.1  —  Initial public release. Features included auto-invoice number generat
         LV.Modify(rowB, "+Select +Focus")
     }
 
-    ; =========================================================
+    
     ; SAVE ALL SETTINGS
-    ; =========================================================
+    
     SaveSettings(*) {
         global prefix, current_num, suffix, digit_length, vat_rate, discount_rate, vat_mode
         global active_profile, hotkeyList, sysHK_Invoice, sysHK_Vat, sysHK_Discount
@@ -1997,9 +1996,9 @@ v4.1  —  Initial public release. Features included auto-invoice number generat
     }
 }
 
-; =========================================================
+
 ; MINI APPS LAUNCHER FUNCTIONS
-; =========================================================
+
 
 ; --- 1. SCRATCHPAD ---
 LaunchScratchpad() {
