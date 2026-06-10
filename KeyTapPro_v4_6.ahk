@@ -761,8 +761,8 @@ The current sequence number is automatically saved to settings.ini after every h
     btnAdd      := mainGui.Add("Button", "x28 y480 w145 h30", "➕ Add / Update")
     btnDel      := mainGui.Add("Button", "x180 y480 w130 h30", "❌ Delete")
     btnToggle   := mainGui.Add("Button", "x317 y480 w155 h30", "🔁 Toggle ON / OFF")
-    btnMoveUp   := mainGui.Add("Button", "x480 y480 w70 h30", "▲ Move Up")
-    btnMoveDown := mainGui.Add("Button", "x557 y480 w70 h30", "▼ Move Down")
+    btnMoveUp   := mainGui.Add("Button", "x480 y480 w70 h30", "▲ Up")
+    btnMoveDown := mainGui.Add("Button", "x557 y480 w70 h30", "▼ Down")
 
     mainGui.SetFont("s8 cGray Italic", "Segoe UI")
     mainGui.Add("Text", "x28 y516 w600 h28",
