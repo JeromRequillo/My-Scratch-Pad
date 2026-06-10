@@ -1250,7 +1250,7 @@ The current sequence number is automatically saved to settings.ini after every h
 
     mainGui.SetFont("s8 cGray Italic", "Segoe UI")
     mainGui.Add("Text", "x28 y482 w600 h28",
-        "Tip: Click any row to load it into the editor. Use [Open Selected Now] to open the folder immediately without a hotkey. Hotkeys are optional — a folder entry without a hotkey can still be opened from this panel. Status shows ⚠ Missing if the folder path no longer exists on disk.")
+        "Tip: Click any row to load it into the editor. Use [Open Selected Now] to open the folder immediately without a hotkey. Hotkeys are optional — a folder entry without a hotkey can still be opened from this panel. ")
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     ; ── HOW TO USE + NOTES ───────────────────────────────────
