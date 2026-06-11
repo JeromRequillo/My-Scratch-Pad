@@ -45,6 +45,7 @@ global sysFunc_Manager  := ""
 ; STARTUP
 
 LoadSettings()
+LaunchGUI()  
 RegisterSystemHotkeys()
 RegisterCustomHotkeys()
 RegisterFolderHotkeys()
