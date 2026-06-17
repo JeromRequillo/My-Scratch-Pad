@@ -182,17 +182,18 @@
             animation: heroFadeUp 0.8s 0.3s cubic-bezier(.4,0,.2,1) forwards;
         }
 
-        /* Typewriter headline */
-        .hero h1 {
-            font-size: clamp(2.4rem, 6.5vw, 4.6rem);
-            color: #fff;
-            margin-bottom: 1rem;
-            min-height: 1.25em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            white-space: nowrap;
-        }
+        
+.hero h1 {
+    font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+    color: #fff;
+    margin-bottom: 1rem;
+    min-height: 1.25em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: normal; 
+    flex-wrap: wrap;     
+}
         #typewriter {
             display: inline-block;
             border-right: 3px solid var(--teal);
