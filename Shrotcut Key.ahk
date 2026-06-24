@@ -1658,17 +1658,7 @@ Multiple Profiles are supported within a single installation. Each profile maint
     clTxt := "
     (
 
-v1.0  —  Mini Apps tab added. Eight built-in utility tools: Quick Scratchpad, Volume & Media Control, Screen Dimmer, Disk Cleaner, Live Clock, Pomodoro Timer, Color Picker, and Text Case Converter. Each tool launches in its own independent window.
-
-v4.5  —  Folder Launcher tab added. Register any number of folder paths with optional global hotkeys. Includes a Browse button, label field, inline Open button, Toggle ON/OFF, and conflict detection against all existing hotkeys. Folder status automatically shows OK or Missing based on disk availability.
-
-v4.4  —  VAT and Discount tab completely redesigned with a wider window layout (680px). GroupBox containers added throughout for visual clarity. Built-in live calculator with a full per-transaction breakdown. Discount hotkey with multi-line support. VAT Add and Deduct mode toggle using radio buttons. Quick-set discount buttons at 5%, 10%, 15%, and 20%. Live peso preview on all rate settings.
-
-v4.3  —  Invoice, VAT, and Manager hotkeys are now fully configurable from within the application. Hotkey conflict detection was implemented. VAT rate is now stored independently per Profile.
-
-v4.2  —  Multiple Profile support was introduced. The Custom Text Hotkey manager received enable and disable toggles and Move Up and Move Down reorder controls.
-
-v4.1  —  Initial public release. Features included auto-invoice number generation with configurable prefix, suffix, and digit length, a VAT deductor hotkey, and system tray integration.
+v1.0  — 
     )"
     mainGui.Add("Edit", "x27 y478 w592 h122 +ReadOnly +Wrap +VScroll -WantReturn", clTxt)
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
