@@ -1594,7 +1594,7 @@ The current sequence number is automatically saved to settings.ini after every h
     mainGui.Add("Link", "x420 y100 w205 h20",
         'GitHub: <a href="https://github.com/JeromRequillo">@JeromRequillo</a>')
     mainGui.Add("Link", "x420 y122 w205 h20",
-        'Repo: <a href="https://github.com/JeromRequillo/KeyTap-Pro">JeromRequillo/KeyTap-Pro</a>')
+        'Repo: <a href="https://github.com/JeromRequillo/KeyTap-Pro">JeromRequillo/Shrotcut-Key</a>')
     mainGui.SetFont("s10 Norm cDefault", "Segoe UI")
 
     mainGui.Add("GroupBox", "x15 y174 w305 h160", "  ⌨ Hotkey Reference")
